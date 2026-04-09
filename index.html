@@ -1,0 +1,784 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#0a0c12">
+<title>Mes Garages</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.49.4"></script>
+<style>
+:root{--bg:#0a0c12;--bg2:#12151f;--bg3:#181c28;--bg4:#1e2333;--border:rgba(255,255,255,0.06);--border2:rgba(255,255,255,0.12);--text:#dde2f0;--text2:#7a82a0;--text3:#3d4460;--accent:#4f7cff;--accent2:#2952d9;--accentbg:rgba(79,124,255,0.12);--green:#1ec87a;--greenbg:rgba(30,200,122,0.1);--amber:#e8a030;--amberbg:rgba(232,160,48,0.1);--red:#e04545;--redbg:rgba(224,69,69,0.1);--purple:#9b6dff;--purplebg:rgba(155,109,255,0.1);--r:14px;--rs:9px;}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;}
+button,input,select,textarea{font-family:inherit;}
+#header{background:var(--bg);border-bottom:1px solid var(--border);padding:12px 14px 0;position:sticky;top:0;z-index:50;}
+.hd-row{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;}
+.hd-title{font-size:18px;font-weight:700;letter-spacing:-.3px;}
+.hd-sub{font-size:11px;color:var(--text2);margin-top:1px;}
+.hd-btns{display:flex;gap:6px;}
+.tabs{display:flex;gap:3px;overflow-x:auto;scrollbar-width:none;}
+.tabs::-webkit-scrollbar{display:none;}
+.tab{flex-shrink:0;padding:8px 13px;border-radius:var(--rs) var(--rs) 0 0;border:1px solid transparent;background:transparent;color:var(--text3);font-size:13px;cursor:pointer;white-space:nowrap;border-bottom:none;transition:all .15s;}
+.tab.on{background:var(--bg2);border-color:var(--border);border-bottom-color:var(--bg2);color:var(--text);font-weight:600;}
+#content{padding:14px 14px 90px;}
+.sec{display:none;}.sec.on{display:block;}
+.btn{padding:8px 14px;border-radius:var(--rs);border:1px solid var(--border2);background:var(--bg2);color:var(--text);font-size:13px;cursor:pointer;font-weight:500;white-space:nowrap;transition:all .15s;}
+.btn:active{transform:scale(.97);}
+.btnp{background:var(--accent2);border-color:var(--accent);color:#fff;}
+.btnd{background:var(--redbg);border-color:var(--red);color:var(--red);}
+.btns{padding:4px 9px;font-size:11px;}
+.btn-wa{background:rgba(37,211,102,0.15);border-color:rgba(37,211,102,0.5);color:#25d366;}
+.btn-sms{background:var(--accentbg);border-color:var(--accent);color:var(--accent);}
+.tb{display:flex;gap:7px;margin-bottom:12px;flex-wrap:wrap;align-items:center;}
+.tb select,.tb input{flex:1;min-width:100px;font-size:13px;padding:8px 10px;border-radius:var(--rs);border:1px solid var(--border2);background:var(--bg2);color:var(--text);}
+.card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--r);padding:13px 14px;margin-bottom:8px;}
+.chd{display:flex;align-items:flex-start;justify-content:space-between;gap:8px;margin-bottom:8px;}
+.ctitle{font-size:14px;font-weight:600;}
+.cactions{display:flex;gap:4px;flex-shrink:0;align-items:center;flex-wrap:wrap;}
+.badge{font-size:11px;padding:3px 9px;border-radius:20px;font-weight:600;white-space:nowrap;}
+.badge.loue{background:var(--greenbg);color:var(--green);}
+.badge.libre{background:var(--amberbg);color:var(--amber);}
+.badge.travaux{background:var(--purplebg);color:var(--purple);}
+.badge.ok,.badge.valide{background:var(--greenbg);color:var(--green);}
+.badge.partiel,.badge.attente{background:var(--amberbg);color:var(--amber);}
+.badge.impaye,.badge.manquant,.badge.perime{background:var(--redbg);color:var(--red);}
+.row{display:flex;justify-content:space-between;align-items:center;font-size:13px;padding:5px 0;border-top:1px solid var(--border);color:var(--text2);gap:8px;}
+.row b{color:var(--text);font-weight:500;text-align:right;}
+.lhd{display:flex;align-items:center;gap:8px;font-size:11px;color:var(--text3);margin:16px 0 8px;font-weight:600;text-transform:uppercase;letter-spacing:.07em;}
+.lline{flex:1;height:1px;background:var(--border);}
+.cbar{height:3px;border-radius:2px;background:var(--bg4);margin:7px 0 3px;overflow:hidden;}
+.cfill{height:100%;border-radius:2px;background:var(--green);}
+.mtabs{display:flex;gap:5px;overflow-x:auto;margin-bottom:12px;scrollbar-width:none;}
+.mtabs::-webkit-scrollbar{display:none;}
+.mt{padding:5px 12px;border-radius:20px;border:1px solid var(--border);font-size:12px;cursor:pointer;background:transparent;color:var(--text2);white-space:nowrap;}
+.mt.on{background:var(--bg3);color:var(--text);border-color:var(--border2);}
+.pgrid{display:grid;grid-template-columns:2fr .8fr 1.2fr .9fr;gap:5px;font-size:13px;padding:8px 0;border-top:1px solid var(--border);align-items:start;}
+.phd{font-size:10px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.05em;border-top:none;padding-top:0;}
+.av{width:38px;height:38px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:13px;flex-shrink:0;}
+.av0{background:var(--accentbg);color:var(--accent);}
+.av1{background:var(--greenbg);color:var(--green);}
+.av2{background:var(--amberbg);color:var(--amber);}
+.av3{background:var(--redbg);color:var(--red);}
+.av4{background:var(--purplebg);color:var(--purple);}
+.kpi-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin-bottom:16px;}
+.kpi{background:var(--bg3);border-radius:var(--rs);padding:12px 14px;}
+.kpi-val{font-size:24px;font-weight:700;font-variant-numeric:tabular-nums;letter-spacing:-.5px;}
+.kpi-lbl{font-size:11px;color:var(--text2);margin-top:2px;}
+.cg{color:var(--green)}.cr{color:var(--red)}.ca{color:var(--amber)}.cb{color:var(--accent)}
+.dash-filters{display:flex;gap:7px;margin-bottom:14px;flex-wrap:wrap;}
+.dash-filters select{font-size:13px;padding:7px 10px;border-radius:var(--rs);border:1px solid var(--border2);background:var(--bg2);color:var(--text);}
+.heat-wrap{overflow-x:auto;border-radius:var(--r);border:1px solid var(--border);}
+.heat-table{border-collapse:collapse;font-size:12px;width:100%;}
+.heat-table th{background:var(--bg3);color:var(--text2);font-weight:500;padding:8px 10px;text-align:left;border-bottom:1px solid var(--border);white-space:nowrap;}
+.heat-table th.mth{text-align:center;font-size:10px;padding:6px 3px;border-left:1px solid var(--border);min-width:38px;}
+.heat-table th.mth.cur{color:var(--text);border-left:2px solid var(--accent);}
+.heat-table td{padding:0;border-bottom:1px solid var(--border);}
+.heat-table td.info{padding:7px 10px;white-space:nowrap;position:sticky;left:0;background:var(--bg2);z-index:1;}
+.heat-table td.loyer-td{padding:7px 8px;text-align:right;font-size:12px;color:var(--text2);white-space:nowrap;}
+.heat-table td.lot-td{padding:7px 8px;font-size:11px;color:var(--text3);white-space:nowrap;}
+.heat-table td.cell{border-left:1px solid var(--border);}
+.heat-table td.cell.cur{border-left:2px solid var(--accent);}
+.cell-in{display:flex;align-items:center;justify-content:center;height:36px;font-size:11px;font-weight:600;}
+.c-ok{background:rgba(30,200,122,0.18);color:#1ec87a;}
+.c-part{background:rgba(232,160,48,0.18);color:#e8a030;}
+.c-no{background:rgba(224,69,69,0.2);color:#e04545;}
+.c-futur{background:var(--bg3);color:var(--text3);}
+.c-vide{background:transparent;}
+.lot-sep td{background:var(--bg4);padding:4px 10px;font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.07em;color:var(--text3);}
+.tname{font-weight:600;font-size:13px;color:var(--text);}
+.tsub{font-size:11px;color:var(--text2);margin-top:1px;}
+.heat-legend{display:flex;gap:14px;margin-top:10px;font-size:12px;color:var(--text2);flex-wrap:wrap;}
+.hleg{display:flex;align-items:center;gap:5px;}
+.hleg-dot{width:10px;height:10px;border-radius:2px;flex-shrink:0;}
+.doc-row{display:flex;align-items:center;justify-content:space-between;padding:7px 0;border-top:1px solid var(--border);font-size:13px;}
+.doc-row-left{display:flex;align-items:center;gap:8px;}
+.pay-mini{background:var(--bg3);border-radius:var(--rs);padding:10px 12px;margin-top:8px;}
+.pay-mini-title{font-size:10px;color:var(--text2);font-weight:600;text-transform:uppercase;letter-spacing:.05em;margin-bottom:6px;}
+.pay-mini-row{display:flex;align-items:center;justify-content:space-between;padding:5px 0;border-top:1px solid var(--border);font-size:13px;}
+.tpl-card{background:var(--bg3);border-radius:var(--rs);padding:12px;margin-bottom:8px;border:1px solid var(--border);}
+.tpl-name{font-size:13px;font-weight:600;margin-bottom:6px;}
+.tpl-body{font-size:12px;color:var(--text2);line-height:1.6;white-space:pre-wrap;border:1px solid var(--border2);border-radius:var(--rs);padding:8px;background:var(--bg2);margin-bottom:8px;}
+.overlay{position:fixed;inset:0;background:rgba(0,0,0,.7);display:flex;align-items:flex-end;justify-content:center;z-index:200;backdrop-filter:blur(3px);}
+.modal{background:var(--bg2);border-radius:20px 20px 0 0;border:1px solid var(--border2);border-bottom:none;padding:14px 14px 36px;width:100%;max-width:560px;max-height:92vh;overflow-y:auto;}
+.mhandle{width:36px;height:4px;border-radius:2px;background:var(--border2);margin:0 auto 14px;}
+.mh3{font-size:15px;font-weight:700;margin-bottom:14px;display:flex;align-items:center;justify-content:space-between;}
+.mclose{cursor:pointer;color:var(--text2);font-size:24px;line-height:1;background:none;border:none;padding:0;}
+.field{margin-bottom:10px;}
+.field label{display:block;font-size:12px;color:var(--text2);margin-bottom:4px;font-weight:500;}
+.field input,.field select,.field textarea{width:100%;font-size:14px;padding:10px 12px;border-radius:var(--rs);border:1px solid var(--border2);background:var(--bg3);color:var(--text);}
+.field input:focus,.field select:focus,.field textarea:focus{outline:none;border-color:var(--accent);}
+.field textarea{resize:vertical;min-height:65px;}
+.f2{display:grid;grid-template-columns:1fr 1fr;gap:8px;}
+.uzone{border:1.5px dashed var(--border2);border-radius:var(--rs);padding:16px;text-align:center;cursor:pointer;color:var(--text2);font-size:13px;}
+.uzone:hover{border-color:var(--accent);color:var(--accent);}
+.cbox{background:var(--bg3);border-radius:var(--r);padding:18px;margin-top:14px;text-align:center;}
+.cbox p{font-size:14px;color:var(--text2);margin-bottom:14px;line-height:1.5;}
+.ca{display:flex;gap:8px;justify-content:center;}
+.bnav{position:fixed;bottom:0;left:0;right:0;background:rgba(10,12,18,.97);border-top:1px solid var(--border);backdrop-filter:blur(12px);display:flex;padding:6px 0 22px;z-index:100;}
+.bnbtn{flex:1;background:transparent;border:none;color:var(--text3);font-size:10px;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:2px;padding:3px 0;}
+.bnbtn.on{color:var(--accent);}
+.bnico{font-size:19px;}
+.toast{position:fixed;bottom:88px;left:50%;transform:translateX(-50%);background:var(--bg3);border:1px solid var(--border2);border-radius:20px;padding:9px 18px;font-size:13px;z-index:300;opacity:0;transition:opacity .25s;pointer-events:none;white-space:nowrap;max-width:88vw;text-align:center;}
+.toast.show{opacity:1;}
+.empty{text-align:center;padding:44px 20px;color:var(--text3);}
+.empty .ei{font-size:34px;margin-bottom:8px;}
+.empty p{font-size:14px;}
+@media(min-width:600px){.kpi-grid{grid-template-columns:repeat(4,1fr);}}
+</style>
+</head>
+<body>
+
+<!-- LOGIN -->
+<div id="login-screen" style="position:fixed;inset:0;background:#0a0c12;display:flex;align-items:center;justify-content:center;z-index:999;padding:24px;">
+  <div style="width:100%;max-width:360px;">
+    <div style="font-size:36px;margin-bottom:6px">🏠</div>
+    <div style="font-size:22px;font-weight:700;letter-spacing:-.5px;color:#dde2f0;margin-bottom:4px">Mes Garages</div>
+    <div style="font-size:13px;color:#7a82a0;margin-bottom:28px" id="login-sub">Connectez-vous pour accéder à votre espace</div>
+    <div style="margin-bottom:12px"><label style="display:block;font-size:12px;color:#7a82a0;margin-bottom:5px;font-weight:500">Email</label><input type="email" id="li-email" placeholder="vous@email.com" autocomplete="email" style="width:100%;font-size:15px;padding:12px 14px;border-radius:9px;border:1px solid rgba(255,255,255,0.12);background:#181c28;color:#dde2f0;font-family:inherit"></div>
+    <div style="margin-bottom:12px"><label style="display:block;font-size:12px;color:#7a82a0;margin-bottom:5px;font-weight:500">Mot de passe</label><input type="password" id="li-pass" placeholder="••••••••" autocomplete="current-password" style="width:100%;font-size:15px;padding:12px 14px;border-radius:9px;border:1px solid rgba(255,255,255,0.12);background:#181c28;color:#dde2f0;font-family:inherit"></div>
+    <button id="li-btn" style="width:100%;padding:13px;border-radius:9px;border:none;background:#2952d9;color:#fff;font-size:15px;font-weight:600;cursor:pointer;font-family:inherit">Se connecter</button>
+    <div id="li-err" style="font-size:13px;color:#e04545;margin-top:10px;text-align:center;min-height:18px"></div>
+    <div id="li-toggle" style="font-size:13px;color:#7a82a0;text-align:center;margin-top:16px;cursor:pointer">Pas encore de compte ? <span style="color:#4f7cff">Créer un compte</span></div>
+  </div>
+</div>
+
+<div id="app" style="display:none">
+<div id="header">
+  <div class="hd-row">
+    <div><div class="hd-title">🏠 Mes Garages</div><div class="hd-sub" id="sub">Démo locale</div></div>
+    <div class="hd-btns">
+      <button class="btn btns" id="btn-add-loc">+ Locataire</button>
+      <button class="btn btns btnp" id="btn-add-gar">+ Garage</button>
+      <button class="btn btns" id="btn-logout" style="color:var(--text3)">⎋</button>
+    </div>
+  </div>
+  <div class="tabs">
+    <button class="tab on" data-tab="0">📊 Dashboard</button>
+    <button class="tab" data-tab="1">🏠 Garages</button>
+    <button class="tab" data-tab="2">👤 Locataires</button>
+    <button class="tab" data-tab="3">💳 Paiements</button>
+    <button class="tab" data-tab="4">✉️ Messages</button>
+  </div>
+</div>
+<div id="content">
+  <div id="s0" class="sec on">
+    <div class="kpi-grid" id="kpis"></div>
+    <div class="dash-filters">
+      <select id="df-an"></select>
+      <select id="df-lot"><option value="all">Tous les lots</option></select>
+      <select id="df-statut"><option value="all">Tous statuts</option><option value="ok">Payés</option><option value="no">Impayés</option><option value="part">Partiels</option></select>
+      <select id="df-loc"><option value="all">Tous locataires</option></select>
+    </div>
+    <div class="heat-wrap"><table class="heat-table"><thead id="heat-head"></thead><tbody id="heat-body"></tbody></table></div>
+    <div class="heat-legend">
+      <div class="hleg"><div class="hleg-dot" style="background:rgba(30,200,122,0.25);border:1px solid #1ec87a"></div>Payé</div>
+      <div class="hleg"><div class="hleg-dot" style="background:rgba(232,160,48,0.25);border:1px solid #e8a030"></div>Partiel</div>
+      <div class="hleg"><div class="hleg-dot" style="background:rgba(224,69,69,0.25);border:1px solid #e04545"></div>Impayé</div>
+      <div class="hleg"><div class="hleg-dot" style="background:var(--bg3);border:1px solid var(--border2)"></div>À venir</div>
+    </div>
+  </div>
+  <div id="s1" class="sec">
+    <div class="tb">
+      <select id="fl"><option value="">Tous les lots</option></select>
+      <select id="fs"><option value="">Tous statuts</option><option value="loue">Loués</option><option value="libre">Libres</option><option value="travaux">Travaux</option></select>
+    </div>
+    <div id="lg"></div>
+  </div>
+  <div id="s2" class="sec">
+    <div class="tb"><input type="search" id="sloc" placeholder="Rechercher un locataire..."></div>
+    <div id="ll"></div>
+  </div>
+  <div id="s3" class="sec">
+    <div class="mtabs" id="mtabs"></div>
+    <div class="tb">
+      <select id="fp"><option value="">Tous statuts</option><option value="ok">Payé</option><option value="partiel">Partiel</option><option value="impaye">Impayé</option></select>
+      <button class="btn" id="btn-add-pay">+ Paiement</button>
+    </div>
+    <div class="pgrid phd"><span>Garage / Locataire</span><span>Lot</span><span>Statut</span><span>Date</span></div>
+    <div id="lp"></div>
+  </div>
+  <div id="s4" class="sec">
+    <div style="margin-bottom:14px;display:flex;align-items:center;justify-content:space-between;">
+      <div style="font-size:14px;font-weight:600;">Templates de messages</div>
+      <button class="btn btns" id="btn-add-tpl">+ Template</button>
+    </div>
+    <div id="ltpl"></div>
+  </div>
+</div>
+<div class="bnav">
+  <button class="bnbtn on" data-bnav="0"><span class="bnico">📊</span>Dashboard</button>
+  <button class="bnbtn" data-bnav="1"><span class="bnico">🏠</span>Garages</button>
+  <button class="bnbtn" data-bnav="2"><span class="bnico">👤</span>Locataires</button>
+  <button class="bnbtn" data-bnav="3"><span class="bnico">💳</span>Paiements</button>
+  <button class="bnbtn" data-bnav="4"><span class="bnico">✉️</span>Messages</button>
+</div>
+<div id="overlay" style="display:none" class="overlay"><div class="modal" id="mc"></div></div>
+<div class="toast" id="toast"></div>
+<script>
+(function(){
+'use strict';
+const SB_URL="https://irvevkifeskkvatzvsyi.supabase.co";
+const SB_KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlydmV2a2lmZXNra3ZhdHp2c3lpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU2NTE1MDEsImV4cCI6MjA5MTIyNzUwMX0.wyEuDO9J4CS_5Pi6hC-FwwqUw6GBgAENMXTW31mFzN0";
+const sb=supabase.createClient(SB_URL,SB_KEY);
+var curUser=null;
+var loginMode='login';
+function initAuth(){
+  sb.auth.getSession().then(function(r){if(r.data&&r.data.session)onLogin(r.data.session.user);});
+  sb.auth.onAuthStateChange(function(_,s){if(s)onLogin(s.user);else onLogout();});
+}
+function onLogin(user){
+  curUser=user;
+  document.getElementById('login-screen').style.display='none';
+  document.getElementById('app').style.display='block';
+  loadSB();
+}
+function onLogout(){
+  curUser=null;
+  document.getElementById('app').style.display='none';
+  document.getElementById('login-screen').style.display='flex';
+}
+document.addEventListener('DOMContentLoaded',function(){
+  document.getElementById('li-btn').onclick=async function(){
+    var email=document.getElementById('li-email').value.trim();
+    var pass=document.getElementById('li-pass').value;
+    var errEl=document.getElementById('li-err');
+    errEl.textContent='';this.textContent='...';this.disabled=true;
+    try{
+      var res=loginMode==='login'
+        ?await sb.auth.signInWithPassword({email:email,password:pass})
+        :await sb.auth.signUp({email:email,password:pass});
+      if(res.error)errEl.textContent=res.error.message;
+      else if(loginMode==='signup'){errEl.style.color='#1ec87a';errEl.textContent='✓ Compte créé ! Vérifiez votre email.';}
+    }catch(e){errEl.textContent=e.message;}
+    this.textContent=loginMode==='login'?'Se connecter':'Créer le compte';this.disabled=false;
+  };
+  document.getElementById('li-toggle').onclick=function(){
+    loginMode=loginMode==='login'?'signup':'login';
+    document.getElementById('li-btn').textContent=loginMode==='login'?'Se connecter':'Créer le compte';
+    document.getElementById('login-sub').textContent=loginMode==='login'?'Connectez-vous pour accéder à votre espace':'Créez votre espace de gestion';
+    this.innerHTML=loginMode==='login'?'Pas encore de compte ? <span style="color:#4f7cff">Créer un compte</span>':'Déjà un compte ? <span style="color:#4f7cff">Se connecter</span>';
+  };
+  ['li-email','li-pass'].forEach(function(id){document.getElementById(id).addEventListener('keydown',function(e){if(e.key==='Enter')document.getElementById('li-btn').click();});});
+  var lbtn=document.getElementById('btn-logout');if(lbtn)lbtn.onclick=function(){sb.auth.signOut();};
+  initAuth();
+});
+async function loadSB(){
+  document.getElementById('sub').textContent='Synchronisation...';
+  try{
+    var r=await Promise.all([
+      sb.from('lots').select('*').order('nom'),
+      sb.from('garages').select('*').order('nom_numero'),
+      sb.from('locataires').select('*').order('nom'),
+      sb.from('contrats').select('*').order('date_debut',{ascending:false}),
+      sb.from('transactions').select('*').order('date_transaction',{ascending:false}),
+      sb.from('documents').select('*'),
+      sb.from('templates').select('*').order('created_at'),
+    ]);
+    lots=r[0].data||[];garages=r[1].data||[];locataires=r[2].data||[];
+    contrats=r[3].data||[];transactions=r[4].data||[];documents=r[5].data||[];
+    templates=r[6].data||[];
+    if(!templates.length){
+      var defT=[
+        {nom:'Relance loyer impayé',corps:"Bonjour {prenom},\n\nNous n'avons pas encore reçu votre loyer de {loyer}€ pour {mois} ({garage}).\n\nMerci de régulariser rapidement.\n\nCordialement",categorie:'loyer'},
+        {nom:'Confirmation de paiement',corps:'Bonjour {prenom},\n\nNous confirmons la réception de votre paiement de {montant_recu}€ pour {mois} ({garage}).\n\nMerci et bonne journée.',categorie:'paiement'},
+      ];
+      for(var dt of defT){var rt=await sb.from('templates').insert(dt).select().single();if(rt.data)templates.push(rt.data);}
+    }
+    document.getElementById('sub').textContent=garages.length+' garages · '+new Date().toLocaleDateString('fr-FR');
+    renderAll();
+  }catch(e){toast('❌ Erreur chargement : '+e.message);}
+}
+function ls(){return null;}
+function ss(){}
+function uid(p){return p+Date.now()+Math.floor(Math.random()*9999);}
+function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+function fmt(d){if(!d)return'—';try{return new Date(d).toLocaleDateString('fr-FR');}catch(e){return d;}}
+function fmtM(ym){if(!ym)return'';var p=ym.split('-');var ns=['Jan','Fév','Mar','Avr','Mai','Jun','Jul','Aoû','Sep','Oct','Nov','Déc'];return(ns[parseInt(p[1])-1]||p[1])+' '+p[0];}
+var NOW=new Date(),CUR_Y=NOW.getFullYear(),CUR_M=NOW.getMonth();
+var MS=['jan','fév','mar','avr','mai','jun','jul','aoû','sep','oct','nov','déc'];
+var ML=['Janvier','Février','Mars','Avril','Mai','Juin','Juillet','Août','Septembre','Octobre','Novembre','Décembre'];
+
+var DEF_TPL=[
+  {id:'TPL1',nom:'Relance loyer impayé',corps:'Bonjour {{prenom}},\n\nNous vous rappelons que votre loyer de {{montant}} € pour le mois de {{mois}} (garage {{garage}}) n\'a pas encore été réglé.\n\nMerci de procéder au règlement dans les meilleurs délais.\n\nCordialement'},
+  {id:'TPL2',nom:'Confirmation de paiement',corps:'Bonjour {{prenom}},\n\nNous accusons bonne réception de votre paiement de {{montant}} € pour le mois de {{mois}}.\n\nMerci et bonne journée.\n\nCordialement'},
+  {id:'TPL3',nom:'Bienvenue',corps:'Bonjour {{prenom}},\n\nBienvenue comme locataire du garage {{garage}} depuis le {{debut}} pour un loyer de {{montant}} €/mois.\n\nCordialement'},
+  {id:'TPL4',nom:'Document manquant',corps:'Bonjour {{prenom}},\n\nVotre dossier est incomplet. Document manquant : {{document}}.\n\nMerci de nous le faire parvenir.\n\nCordialement'},
+];
+
+var DEF={
+  lots:[{id:'LT1',nom:'Metz'},{id:'LT2',nom:'Terville'},{id:'LT3',nom:'Amnéville'}],
+  garages:[
+    {id:'G01',nom_numero:'Garage 10D',lot_id:'LT1',loyer_net:80,statut:'loue'},
+    {id:'G02',nom_numero:'Garage 13G',lot_id:'LT1',loyer_net:85,statut:'loue'},
+    {id:'G03',nom_numero:'Garage 1',lot_id:'LT2',loyer_net:85,statut:'loue'},
+    {id:'G04',nom_numero:'Garage 2',lot_id:'LT2',loyer_net:85,statut:'loue'},
+    {id:'G05',nom_numero:'Garage 3',lot_id:'LT2',loyer_net:85,statut:'loue'},
+    {id:'G06',nom_numero:'Garage 1',lot_id:'LT3',loyer_net:65,statut:'loue'},
+    {id:'G07',nom_numero:'Garage 2',lot_id:'LT3',loyer_net:65,statut:'loue'},
+    {id:'G08',nom_numero:'Garage 3',lot_id:'LT3',loyer_net:75,statut:'loue'},
+    {id:'G09',nom_numero:'Garage 4',lot_id:'LT3',loyer_net:75,statut:'loue'},
+    {id:'G10',nom_numero:'Garage 5',lot_id:'LT3',loyer_net:70,statut:'loue'},
+    {id:'G11',nom_numero:'Garage 6',lot_id:'LT3',loyer_net:70,statut:'loue'},
+  ],
+  locataires:[
+    {id:'L1',prenom:'Martine',nom:'Julien',telephone:'0611223344',email:'',profession:'',notes:''},
+    {id:'L2',prenom:'Raphael',nom:'Schmitt',telephone:'0622334455',email:'',profession:'',notes:''},
+    {id:'L3',prenom:'Frikh',nom:'Reda',telephone:'0633445566',email:'',profession:'',notes:''},
+    {id:'L4',prenom:'Christophe',nom:'Hebting',telephone:'0644556677',email:'',profession:'',notes:''},
+    {id:'L5',prenom:'Nicolas',nom:'Guillemaille',telephone:'0655667788',email:'',profession:'',notes:''},
+    {id:'L6',prenom:'Léo',nom:'Cassard',telephone:'0666778899',email:'',profession:'',notes:''},
+    {id:'L7',prenom:'Sonia',nom:'Devillard',telephone:'0677889900',email:'',profession:'',notes:''},
+    {id:'L8',prenom:'Gwennael',nom:'Sahnoune',telephone:'0688990011',email:'',profession:'',notes:''},
+    {id:'L9',prenom:'Clara',nom:'Avoine',telephone:'0699001122',email:'',profession:'',notes:''},
+    {id:'L10',prenom:'Djamila',nom:'Benyahia',telephone:'0700112233',email:'',profession:'',notes:''},
+    {id:'L11',prenom:'Daniel',nom:'Haas',telephone:'0711223344',email:'',profession:'',notes:''},
+    {id:'L12',prenom:'Enzo',nom:'Falco',telephone:'0722334455',email:'',profession:'',notes:''},
+  ],
+  contrats:[
+    {id:'C1',locataire_id:'L1',garage_id:'G01',date_debut:'2024-07-01',date_fin:null,loyer_convenu:80,caution_totale:160,caution_versee:160,est_actif:true},
+    {id:'C2',locataire_id:'L2',garage_id:'G02',date_debut:'2024-01-01',date_fin:'2025-05-01',loyer_convenu:75,caution_totale:150,caution_versee:150,est_actif:false},
+    {id:'C3',locataire_id:'L3',garage_id:'G02',date_debut:'2025-05-01',date_fin:null,loyer_convenu:85,caution_totale:170,caution_versee:170,est_actif:true},
+    {id:'C4',locataire_id:'L4',garage_id:'G03',date_debut:'2024-08-01',date_fin:null,loyer_convenu:85,caution_totale:170,caution_versee:170,est_actif:true},
+    {id:'C5',locataire_id:'L5',garage_id:'G04',date_debut:'2025-02-01',date_fin:null,loyer_convenu:85,caution_totale:170,caution_versee:85,est_actif:true},
+    {id:'C6',locataire_id:'L6',garage_id:'G05',date_debut:'2024-01-01',date_fin:null,loyer_convenu:85,caution_totale:170,caution_versee:170,est_actif:true},
+    {id:'C7',locataire_id:'L7',garage_id:'G06',date_debut:'2024-03-01',date_fin:null,loyer_convenu:65,caution_totale:130,caution_versee:130,est_actif:true},
+    {id:'C8',locataire_id:'L8',garage_id:'G07',date_debut:'2024-03-01',date_fin:null,loyer_convenu:65,caution_totale:130,caution_versee:130,est_actif:true},
+    {id:'C9',locataire_id:'L9',garage_id:'G08',date_debut:'2024-10-01',date_fin:null,loyer_convenu:75,caution_totale:150,caution_versee:150,est_actif:true},
+    {id:'C10',locataire_id:'L10',garage_id:'G09',date_debut:'2024-12-01',date_fin:null,loyer_convenu:75,caution_totale:150,caution_versee:150,est_actif:true},
+    {id:'C11',locataire_id:'L11',garage_id:'G10',date_debut:'2025-01-01',date_fin:null,loyer_convenu:70,caution_totale:140,caution_versee:140,est_actif:true},
+    {id:'C12',locataire_id:'L12',garage_id:'G11',date_debut:'2024-03-01',date_fin:null,loyer_convenu:70,caution_totale:140,caution_versee:140,est_actif:true},
+  ],
+  documents:[
+    {id:'D1',locataire_id:'L1',type_doc:'CNI',nom:'CNI Julien Martine',statut:'valide',date_doc:'2024-07-01'},
+    {id:'D2',locataire_id:'L1',type_doc:'Bail',nom:'Bail G10D 2024',statut:'valide',date_doc:'2024-07-01'},
+    {id:'D3',locataire_id:'L4',type_doc:'CNI',nom:'CNI Hebting',statut:'valide',date_doc:'2024-08-01'},
+    {id:'D4',locataire_id:'L4',type_doc:'Assurance',nom:'',statut:'manquant',date_doc:null},
+    {id:'D5',locataire_id:'L9',type_doc:'CNI',nom:'CNI Avoine',statut:'valide',date_doc:'2024-10-01'},
+    {id:'D6',locataire_id:'L9',type_doc:'Bail',nom:'Bail G3 Amnéville',statut:'valide',date_doc:'2024-10-01'},
+  ],
+};
+
+function buildTx(){
+  var t=[],n=1;
+  function add(c,l,g,mois,sp){
+    mois.forEach(function(ym,i){
+      var s=sp?sp[i]||'ok':'ok';
+      if(s==='skip') return;
+      t.push({id:'T'+(n++),contrat_id:c,locataire_id:l,garage_id:g,
+        date_transaction:ym+'-05',mois_concerne:ym,
+        montant:s==='part'?37:0,type_mouvement:'loyer',statut_paiement:s,methode:'virement',commentaire:''});
+    });
+  }
+  function r(y,a,b){var x=[];for(var m=a;m<=b;m++)x.push(y+'-'+(m<10?'0'+m:m));return x;}
+  add('C1','L1','G01',r(2024,7,12).concat(r(2025,1,12)));
+  add('C2','L2','G02',r(2024,1,4));
+  add('C3','L3','G02',r(2025,5,12));
+  add('C4','L4','G03',r(2024,8,12).concat(r(2025,1,12)));
+  add('C5','L5','G04',r(2025,2,12));
+  add('C6','L6','G05',r(2024,1,12).concat(r(2025,1,12)));
+  add('C7','L7','G06',r(2024,3,12).concat(r(2025,1,12)));
+  add('C8','L8','G07',r(2024,3,12).concat(r(2025,1,12)));
+  var m9=r(2024,10,12).concat(r(2025,1,12));
+  add('C9','L9','G08',m9,m9.map(function(_,i){return i===9?'part':'ok';}));
+  add('C10','L10','G09',['2024-12'].concat(r(2025,1,12)));
+  add('C11','L11','G10',r(2025,1,12));
+  add('C12','L12','G11',r(2024,3,12).concat(r(2025,1,12)));
+  return t;
+}
+DEF.transactions=buildTx();
+DEF.templates=JSON.parse(JSON.stringify(DEF_TPL));
+
+var lots,garages,locataires,contrats,transactions,documents,templates;
+var curMois=new Date().toISOString().slice(0,7);
+
+function load(){
+  lots=ls('mg_lots')||JSON.parse(JSON.stringify(DEF.lots));
+  garages=ls('mg_garages')||JSON.parse(JSON.stringify(DEF.garages));
+  locataires=ls('mg_locataires')||JSON.parse(JSON.stringify(DEF.locataires));
+  contrats=ls('mg_contrats')||JSON.parse(JSON.stringify(DEF.contrats));
+  transactions=ls('mg_transactions')||JSON.parse(JSON.stringify(DEF.transactions));
+  documents=ls('mg_documents')||JSON.parse(JSON.stringify(DEF.documents));
+  templates=ls('mg_templates')||JSON.parse(JSON.stringify(DEF.templates));
+}
+function save(){} // Supabase handles persistence
+
+var curTab=0;
+function gotoTab(n){
+  curTab=n;
+  document.querySelectorAll('.sec').forEach(function(s,i){s.className='sec'+(i===n?' on':'');});
+  document.querySelectorAll('.tab').forEach(function(b){b.className='tab'+(parseInt(b.dataset.tab)===n?' on':'');});
+  document.querySelectorAll('.bnbtn').forEach(function(b){b.className='bnbtn'+(parseInt(b.dataset.bnav)===n?' on':'');});
+}
+
+function renderAll(){
+  document.getElementById('sub').textContent=garages.length+' garages · '+new Date().toLocaleDateString('fr-FR');
+  renderDash();fillLotF();rGarages();rLocataires();rMoisTabs();rPaiements();rTemplates();
+}
+
+/* ── DASHBOARD ── */
+function getYears(){
+  var y=new Set();
+  transactions.forEach(function(t){if(t.mois_concerne)y.add(t.mois_concerne.slice(0,4));});
+  contrats.forEach(function(c){if(c.date_debut)y.add(c.date_debut.slice(0,4));});
+  y.add(String(CUR_Y));
+  return[...y].sort();
+}
+function renderDash(){
+  var years=getYears();
+  var dfAn=document.getElementById('df-an');
+  // Année en cours par défaut
+  if(!dfAn.value||!years.includes(dfAn.value)) dfAn.value=String(CUR_Y);
+  dfAn.innerHTML=years.map(function(y){return'<option value="'+y+'"'+(y===dfAn.value?' selected':'')+'>'+y+'</option>';}).join('');
+  var dfLot=document.getElementById('df-lot');
+  if(!dfLot._init){dfLot.innerHTML='<option value="all">Tous les lots</option>'+lots.map(function(l){return'<option value="'+l.id+'">'+esc(l.nom)+'</option>';}).join('');dfLot._init=true;}
+  var dfLoc=document.getElementById('df-loc');
+  dfLoc.innerHTML='<option value="all">Tous locataires</option>'+locataires.map(function(l){return'<option value="'+l.id+'">'+esc(l.prenom)+' '+esc(l.nom)+'</option>';}).join('');
+  renderHeat();
+}
+function renderHeat(){
+  var selY=parseInt(document.getElementById('df-an').value||CUR_Y);
+  var selLot=document.getElementById('df-lot').value;
+  var selSt=document.getElementById('df-statut').value;
+  var selLoc=document.getElementById('df-loc').value;
+  var cols=[];for(var m=0;m<12;m++)cols.push({y:selY,m:m});
+  var txIdx={};
+  transactions.forEach(function(t){
+    if(t.type_mouvement!=='loyer')return;
+    var k=t.contrat_id+'_'+t.mois_concerne;
+    if(!txIdx[k])txIdx[k]=[];txIdx[k].push(t);
+  });
+  function status(c,cy,cm){
+    var ym=cy+'-'+(cm<9?'0'+(cm+1):(cm+1));
+    var db=new Date(c.date_debut),dbY=db.getFullYear(),dbM=db.getMonth();
+    if(cy<dbY||(cy===dbY&&cm<dbM))return'vide';
+    if(c.date_fin){var df=new Date(c.date_fin),dfY=df.getFullYear(),dfM=df.getMonth();if(cy>dfY||(cy===dfY&&cm>dfM))return'vide';}
+    if(cy>CUR_Y||(cy===CUR_Y&&cm>CUR_M))return'futur';
+    var txs=txIdx[c.id+'_'+ym]||[];
+    if(!txs.length)return'no';
+    var sp=txs[0].statut_paiement;
+    return(sp==='ok'||sp==='avance')?'ok':(sp==='part'||sp==='partiel')?'part':'no';
+  }
+  var allC=contrats;
+  if(selLot!=='all'){var gids=garages.filter(function(g){return g.lot_id===selLot;}).map(function(g){return g.id;});allC=allC.filter(function(c){return gids.indexOf(c.garage_id)>=0;});}
+  if(selLoc!=='all')allC=allC.filter(function(c){return c.locataire_id===selLoc;});
+  if(selSt!=='all')allC=allC.filter(function(c){return cols.some(function(col){return status(c,col.y,col.m)===selSt;});});
+  var kpiC=contrats.filter(function(c){var db=new Date(c.date_debut),dbY=db.getFullYear();var endY=c.date_fin?new Date(c.date_fin).getFullYear():CUR_Y+1;return dbY<=selY&&endY>=selY;});
+  if(selLot!=='all'){var gids2=garages.filter(function(g){return g.lot_id===selLot;}).map(function(g){return g.id;});kpiC=kpiC.filter(function(c){return gids2.indexOf(c.garage_id)>=0;});}
+  var mensuel=kpiC.filter(function(c){return c.est_actif;}).reduce(function(s,c){return s+(c.loyer_convenu||0);},0);
+  var ok=0,no=0,part=0,tot=0;
+  kpiC.forEach(function(c){cols.forEach(function(col){var s=status(c,col.y,col.m);if(s==='vide'||s==='futur')return;tot++;if(s==='ok')ok++;else if(s==='part')part++;else if(s==='no')no++;});});
+  var taux=tot>0?Math.round((ok+part)/tot*100):0;
+  document.getElementById('kpis').innerHTML=
+    '<div class="kpi"><div class="kpi-val cb">'+kpiC.length+'</div><div class="kpi-lbl">Baux '+selY+'</div></div>'+
+    '<div class="kpi"><div class="kpi-val cg">'+mensuel+' €</div><div class="kpi-lbl">Loyers / mois</div></div>'+
+    '<div class="kpi"><div class="kpi-val '+(no>0?'cr':'cg')+'">'+no+'</div><div class="kpi-lbl">Impayés</div></div>'+
+    '<div class="kpi"><div class="kpi-val '+(taux>=95?'cg':taux>=80?'ca':'cr')+'">'+taux+'%</div><div class="kpi-lbl">Recouvrement</div></div>';
+  var th='<tr><th style="min-width:130px;position:sticky;left:0;z-index:3;background:var(--bg3)">Locataire</th><th style="min-width:50px">Lot</th><th style="min-width:55px;text-align:right">Loyer</th>';
+  cols.forEach(function(col){var cur=col.y===CUR_Y&&col.m===CUR_M;th+='<th class="mth'+(cur?' cur':'')+'">'+MS[col.m]+'</th>';});
+  th+='</tr>';
+  document.getElementById('heat-head').innerHTML=th;
+  var lotIds=[...new Set(allC.map(function(c){var g=garages.find(function(x){return x.id===c.garage_id;});return g?g.lot_id:null;}).filter(Boolean))];
+  var tb='';var cs=3+cols.length;
+  lotIds.forEach(function(lid){
+    var lot=lots.find(function(l){return l.id===lid;})||{nom:'?'};
+    var lc=allC.filter(function(c){var g=garages.find(function(x){return x.id===c.garage_id;});return g&&g.lot_id===lid;});
+    tb+='<tr class="lot-sep"><td colspan="'+cs+'">'+esc(lot.nom)+'</td></tr>';
+    lc.forEach(function(c){
+      var l=locataires.find(function(x){return x.id===c.locataire_id;})||{prenom:'?',nom:'?'};
+      var g=garages.find(function(x){return x.id===c.garage_id;})||{nom_numero:'?'};
+      tb+='<tr><td class="info"><div class="tname">'+esc(l.prenom)+' '+esc(l.nom)+'</div><div class="tsub">'+esc(g.nom_numero)+'</div></td><td class="lot-td">'+esc(lot.nom)+'</td><td class="loyer-td">'+(c.loyer_convenu||0)+' €</td>';
+      cols.forEach(function(col){
+        var cur=col.y===CUR_Y&&col.m===CUR_M;
+        var s=status(c,col.y,col.m);
+        var cls='c-vide',txt='';
+        if(s==='ok'){cls='c-ok';txt=c.loyer_convenu||'';}else if(s==='part'){cls='c-part';txt='~';}else if(s==='no'){cls='c-no';txt='!';}else if(s==='futur'){cls='c-futur';}
+        tb+='<td class="cell'+(cur?' cur':'')+'"><div class="cell-in '+cls+'">'+txt+'</div></td>';
+      });
+      tb+='</tr>';
+    });
+  });
+  if(!tb)tb='<tr><td colspan="'+cs+'" style="padding:30px;text-align:center;color:var(--text3)">Aucun résultat</td></tr>';
+  document.getElementById('heat-body').innerHTML=tb;
+}
+['df-an','df-lot','df-statut','df-loc'].forEach(function(id){document.getElementById(id).addEventListener('change',renderHeat);});
+
+/* ── GARAGES ── */
+function fillLotF(){
+  var fl=document.getElementById('fl'),cur=fl.value;
+  fl.innerHTML='<option value="">Tous les lots</option>'+lots.map(function(l){return'<option value="'+l.id+'"'+(l.id===cur?' selected':'')+'>'+esc(l.nom)+'</option>';}).join('');
+}
+function rGarages(){
+  var fl=document.getElementById('fl').value,fs=document.getElementById('fs').value;
+  var list=garages.filter(function(g){return(!fl||g.lot_id===fl)&&(!fs||g.statut===fs);});
+  var lotIds=[...new Set(list.map(function(g){return g.lot_id;}))];
+  var h='';
+  lotIds.forEach(function(lid){
+    var lot=lots.find(function(l){return l.id===lid;})||{nom:'?'};
+    var gs=list.filter(function(g){return g.lot_id===lid;});
+    h+='<div class="lhd"><span>'+esc(lot.nom)+'</span><span class="lline"></span><span>'+gs.length+' garage'+(gs.length>1?'s':'')+'</span></div>';
+    gs.forEach(function(g){
+      var c=contrats.find(function(x){return x.garage_id===g.id&&x.est_actif;});
+      var l=c?locataires.find(function(x){return x.id===c.locataire_id;}):null;
+      var bc=g.statut==='loue'?'loue':g.statut==='travaux'?'travaux':'libre';
+      var bl=g.statut==='loue'?'Loué':g.statut==='travaux'?'Travaux':'Libre';
+      var pct=c&&c.caution_totale>0?Math.round(c.caution_versee/c.caution_totale*100):0;
+      h+='<div class="card"><div class="chd"><span class="ctitle">'+esc(g.nom_numero)+'</span><div class="cactions"><span class="badge '+bc+'">'+bl+'</span><button class="btn btns" data-eg="'+g.id+'">✏️</button><button class="btn btns btnd" data-dg="'+g.id+'">🗑</button></div></div>';
+      if(l&&c){h+='<div class="row"><span>Locataire</span><b>'+esc(l.prenom)+' '+esc(l.nom)+'</b></div><div class="row"><span>Loyer</span><b>'+(c.loyer_convenu||g.loyer_net||0)+' €/mois</b></div><div class="row"><span>Bail</span><b>'+fmt(c.date_debut)+' → '+(c.date_fin?fmt(c.date_fin):'En cours')+'</b></div><div class="row"><span>Caution</span><b>'+c.caution_versee+' / '+c.caution_totale+' €</b></div><div class="cbar"><div class="cfill" style="width:'+pct+'%"></div></div><div style="font-size:11px;color:var(--text2)">'+(pct===100?'✓ Caution intégrale':pct+'% versée')+'</div>';}
+      else{h+='<div class="row"><span>Loyer affiché</span><b>'+(g.loyer_net||0)+' €/mois</b></div>';}
+      h+='</div>';
+    });
+  });
+  document.getElementById('lg').innerHTML=h||'<div class="empty"><div class="ei">🔍</div><p>Aucun garage</p></div>';
+}
+
+/* ── LOCATAIRES ── */
+var DTYPES=['CNI','Bail','Assurance','Caution','État des lieux'];
+var DICONS={'CNI':'🪪','Bail':'📄','Assurance':'🛡️','Caution':'💰','État des lieux':'🔍'};
+function rLocataires(){
+  var q=(document.getElementById('sloc').value||'').toLowerCase();
+  var list=locataires.filter(function(l){return(l.nom+' '+(l.prenom||'')).toLowerCase().indexOf(q)>=0;});
+  var h='';
+  list.forEach(function(l,i){
+    var c=contrats.find(function(x){return x.locataire_id===l.id&&x.est_actif;});
+    var g=c?garages.find(function(x){return x.id===c.garage_id;}):null;
+    var lot=g?lots.find(function(x){return x.id===g.lot_id;}):null;
+    var docs=documents.filter(function(d){return d.locataire_id===l.id;});
+    var mq=docs.filter(function(d){return d.statut==='manquant';}).length;
+    var pct=c&&c.caution_totale>0?Math.round(c.caution_versee/c.caution_totale*100):0;
+    var recentPays=[];
+    if(c){for(var mi=0;mi<4;mi++){var d2=new Date(CUR_Y,CUR_M-mi,1);var ym=d2.getFullYear()+'-'+(d2.getMonth()<9?'0'+(d2.getMonth()+1):(d2.getMonth()+1));var txs=transactions.filter(function(t){return t.contrat_id===c.id&&t.mois_concerne===ym&&t.type_mouvement==='loyer';});var recu=txs.reduce(function(s,t){return s+parseFloat(t.montant||c.loyer_convenu||0);},0);var du=c.loyer_convenu||0;var st=txs.length===0?'impaye':recu>=du?'ok':'partiel';recentPays.push({ym:ym,recu:recu,du:du,st:st});}}
+    var docRows=DTYPES.map(function(t){
+      var d=docs.find(function(x){return x.type_doc===t;});
+      var st=d?d.statut:'manquant';
+      var hasFile=d&&d.nom;
+      var stLabel=st==='valide'?'✓':st==='attente'?'⏳':st==='perime'?'⚠️':'✗';
+      var stCol=st==='valide'?'var(--green)':st==='attente'?'var(--amber)':'var(--red)';
+      return '<div class="doc-row"><div class="doc-row-left"><span style="font-size:15px">'+DICONS[t]+'</span><div><div style="font-size:13px;color:var(--text)">'+t+'</div><div style="font-size:11px;color:var(--text2)">'+(hasFile?esc(d.nom):'Aucun fichier')+'</div></div></div><div style="display:flex;align-items:center;gap:6px"><span style="font-size:12px;color:'+stCol+'">'+stLabel+'</span><button class="btn btns" data-upload-doc="'+l.id+'" data-upload-type="'+t+'" style="font-size:11px;padding:3px 9px;'+(hasFile?'border-color:var(--green);color:var(--green)':'')+'">'+( hasFile?'📎 Modifier':'+ Upload')+'</button></div></div>';
+    }).join('');
+    var payRows=c?recentPays.map(function(p){
+      var stBadge=p.st==='ok'?'ok':p.st==='partiel'?'partiel':'impaye';
+      var stLabel=p.st==='ok'?'Payé':p.st==='partiel'?'Partiel':'Impayé';
+      return '<div class="pay-mini-row"><span style="font-size:12px;color:var(--text2)">'+fmtM(p.ym)+'</span><div style="display:flex;align-items:center;gap:6px">'+(p.recu>0?'<span style="font-size:12px;color:var(--text2)">'+p.recu+' €</span>':'')+'<span class="badge '+stBadge+'">'+stLabel+'</span>'+(p.st!=='ok'?'<button class="btn btns btnp" data-quick-pay="'+l.id+'" data-quick-mois="'+p.ym+'" data-quick-du="'+(c.loyer_convenu||0)+'" style="font-size:11px;padding:3px 8px">💳 Encaisser</button>':'')+'</div></div>';
+    }).join(''):'';
+    h+='<div class="card"><div style="display:flex;align-items:center;gap:10px;margin-bottom:10px"><div class="av av'+i%5+'">'+((l.prenom||'?')[0]+(l.nom||'?')[0]).toUpperCase()+'</div><div style="flex:1"><div style="font-size:15px;font-weight:600">'+esc(l.prenom)+' '+esc(l.nom)+'</div><div style="font-size:12px;color:var(--text2)">'+(g?esc(g.nom_numero)+' · '+(lot?esc(lot.nom):''):'')+' '+(l.profession?'· '+esc(l.profession):'')+'</div></div><div style="display:flex;gap:4px;flex-wrap:wrap;justify-content:flex-end">'+(mq>0?'<span class="badge impaye">'+mq+' doc</span>':'')+(l.telephone?'<button class="btn btns btn-wa" data-wa="'+l.id+'">💬 WA</button>':'')+(l.telephone?'<button class="btn btns btn-sms" data-sms="'+l.id+'">📱 SMS</button>':'')+'<button class="btn btns" data-el="'+l.id+'">✏️</button><button class="btn btns btnd" data-dl="'+l.id+'">🗑</button></div></div>'+(l.telephone?'<div class="row"><span>Téléphone</span><b>'+esc(l.telephone)+'</b></div>':'')+(l.email?'<div class="row"><span>Email</span><b style="font-size:12px">'+esc(l.email)+'</b></div>':'')+(c?'<div class="row"><span>Bail</span><b>'+fmt(c.date_debut)+' → '+(c.date_fin?fmt(c.date_fin):'En cours')+'</b></div>':'')+(c&&c.caution_totale>0?'<div class="row"><span>Caution</span><b>'+c.caution_versee+' / '+c.caution_totale+' €</b></div><div class="cbar"><div class="cfill" style="width:'+pct+'%"></div></div><div style="font-size:11px;color:var(--text2);margin-bottom:8px">'+(pct===100?'✓ Caution intégrale':'Partielle — '+pct+'%')+'</div>':'')+(c?'<div class="pay-mini"><div class="pay-mini-title">Paiements récents</div>'+payRows+'</div>':'')+'<div style="margin-top:10px"><div style="font-size:10px;font-weight:600;color:var(--text2);text-transform:uppercase;letter-spacing:.05em;margin-bottom:4px">Documents</div>'+docRows+'</div></div>';
+  });
+  document.getElementById('ll').innerHTML=h||'<div class="empty"><div class="ei">👤</div><p>Aucun locataire</p></div>';
+}
+
+/* ── PAIEMENTS ── */
+function rMoisTabs(){
+  var el=document.getElementById('mtabs');el.innerHTML='';
+  for(var i=-4;i<=2;i++){
+    (function(ii){
+      var d=new Date(NOW.getFullYear(),NOW.getMonth()+ii,1);
+      var m=d.toISOString().slice(0,7);
+      var b=document.createElement('button');
+      b.className='mt'+(m===curMois?' on':'');
+      b.textContent=fmtM(m);
+      b.onclick=function(){curMois=m;el.querySelectorAll('.mt').forEach(function(x){x.className='mt';});b.className='mt on';rPaiements();};
+      el.appendChild(b);
+    })(i);
+  }
+}
+function rPaiements(){
+  var fp=document.getElementById('fp').value;
+  var sl={ok:'Payé',partiel:'Partiel',impaye:'Impayé'};
+  var rows=contrats.filter(function(c){
+    var db=new Date(c.date_debut),cm=new Date(curMois+'-01');
+    if(cm<db)return false;
+    if(c.date_fin&&cm>new Date(c.date_fin))return false;
+    return true;
+  }).map(function(c){
+    var g=garages.find(function(x){return x.id===c.garage_id;});
+    var l=locataires.find(function(x){return x.id===c.locataire_id;});
+    var lot=g?lots.find(function(x){return x.id===g.lot_id;}):null;
+    var txM=transactions.filter(function(t){return t.contrat_id===c.id&&t.mois_concerne===curMois&&t.type_mouvement==='loyer';});
+    var recu=txM.reduce(function(s,t){return s+parseFloat(t.montant||c.loyer_convenu||0);},0);
+    var du=parseFloat(c.loyer_convenu||0);
+    var statut=recu===0?'impaye':recu>=du?'ok':'partiel';
+    if(fp&&statut!==fp)return null;
+    var last=txM[0];
+    return '<div class="pgrid"><div><div style="font-size:13px;font-weight:600">'+(g?esc(g.nom_numero):'?')+'</div><div style="font-size:12px;color:var(--text2)">'+(l?esc(l.prenom)+' '+esc(l.nom):'')+'</div></div><span style="font-size:12px;color:var(--text2)">'+(lot?esc(lot.nom):'')+'</span><div><span class="badge '+statut+'">'+(sl[statut]||statut)+'</span>'+(statut==='partiel'?'<div style="font-size:11px;color:var(--text2);margin-top:2px">'+recu+' / '+du+' €</div>':'')+'</div><span style="font-size:12px;color:var(--text2)">'+(last?fmt(last.date_transaction):'—')+'</span></div>';
+  }).filter(Boolean);
+  document.getElementById('lp').innerHTML=rows.join('')||'<div class="empty"><div class="ei">💳</div><p>Aucun paiement ce mois</p></div>';
+}
+
+/* ── TEMPLATES ── */
+function applyVars(corps,l,c,g,extra){
+  var now=new Date();
+  var moisCur=ML[now.getMonth()]+' '+now.getFullYear();
+  return corps.replace(/{{prenom}}/g,l?l.prenom:'').replace(/{{nom}}/g,l?l.nom:'').replace(/{{montant}}/g,c?c.loyer_convenu||'':'').replace(/{{mois}}/g,(extra&&extra.mois)||moisCur).replace(/{{garage}}/g,g?g.nom_numero:'').replace(/{{debut}}/g,c?fmt(c.date_debut):'').replace(/{{document}}/g,(extra&&extra.document)||'');
+}
+function rTemplates(){
+  var h=templates.map(function(t){
+    return '<div class="tpl-card"><div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px"><div class="tpl-name">'+esc(t.nom)+'</div><div style="display:flex;gap:5px"><button class="btn btns" data-edit-tpl="'+t.id+'">✏️</button><button class="btn btns btnd" data-del-tpl="'+t.id+'">🗑</button></div></div><div class="tpl-body">'+esc(t.corps)+'</div><div style="font-size:11px;color:var(--text3);margin-bottom:8px">Variables : <code>{{prenom}}</code> <code>{{nom}}</code> <code>{{montant}}</code> <code>{{mois}}</code> <code>{{garage}}</code> <code>{{debut}}</code> <code>{{document}}</code></div><div style="display:flex;gap:6px"><button class="btn btns btn-wa" data-send-tpl="'+t.id+'" data-send-via="wa">💬 Tester WA</button><button class="btn btns btn-sms" data-send-tpl="'+t.id+'" data-send-via="sms">📱 Tester SMS</button></div></div>';
+  }).join('');
+  document.getElementById('ltpl').innerHTML=h||'<div class="empty"><div class="ei">✉️</div><p>Aucun template</p></div>';
+}
+
+/* ── MESSAGES ── */
+function openMsgModal(locId,via,tplId){
+  var l=locataires.find(function(x){return x.id===locId;});
+  var c=contrats.find(function(x){return x.locataire_id===locId&&x.est_actif;});
+  var g=c?garages.find(function(x){return x.id===c.garage_id;}):null;
+  var tplOpts=templates.map(function(t){return'<option value="'+t.id+'"'+(tplId&&t.id===tplId?' selected':'')+'>'+esc(t.nom)+'</option>';}).join('');
+  function getMsg(){var selTpl=document.getElementById('msg-tpl').value;var tpl=templates.find(function(x){return x.id===selTpl;});return tpl?applyVars(tpl.corps,l,c,g,{}):''}
+  showModal('<div class="mhandle"></div><div class="mh3">'+(via==='wa'?'💬 WhatsApp':'📱 SMS')+' — '+esc(l?l.prenom+' '+l.nom:'')+' <button class="mclose" id="mcl">×</button></div><div class="field"><label>Template</label><select id="msg-tpl">'+tplOpts+'</select></div><div class="field"><label>Message (éditable)</label><textarea id="msg-body" style="min-height:140px">'+esc(getMsg())+'</textarea></div><div class="field"><label>Numéro</label><input id="msg-tel" value="'+esc(l&&l.telephone||'')+'" placeholder="06xxxxxxxx"></div><div style="display:flex;gap:8px;margin-top:8px"><button class="btn '+(via==='wa'?'btn-wa':'btn-sms')+'" style="flex:1" id="msg-send">'+(via==='wa'?'💬 Ouvrir WhatsApp':'📱 Ouvrir SMS')+'</button><button class="btn" onclick="closeModal()" style="flex:0 0 auto">Annuler</button></div>');
+  document.getElementById('mcl').onclick=closeModal;
+  document.getElementById('msg-tpl').onchange=function(){document.getElementById('msg-body').value=getMsg();};
+  document.getElementById('msg-send').onclick=function(){
+    var tel=document.getElementById('msg-tel').value.replace(/\s/g,'');
+    var msg=document.getElementById('msg-body').value;
+    if(!tel){toast('⚠️ Numéro requis');return;}
+    var encoded=encodeURIComponent(msg);
+    if(via==='wa'){var waNum=tel.startsWith('0')?'33'+tel.slice(1):tel;window.open('https://wa.me/'+waNum+'?text='+encoded,'_blank');}
+    else{window.open('sms:'+tel+'?body='+encoded,'_blank');}
+    closeModal();toast('✓ Message ouvert');
+  };
+}
+function openSendTplModal(tplId,via){
+  var locOpts=locataires.map(function(l){return'<option value="'+l.id+'">'+esc(l.prenom)+' '+esc(l.nom)+'</option>';}).join('');
+  showModal('<div class="mhandle"></div><div class="mh3">Choisir le destinataire <button class="mclose" id="mcl">×</button></div><div class="field"><label>Locataire</label><select id="tst-loc">'+locOpts+'</select></div><button class="btn btnp" style="width:100%;margin-top:8px" id="tst-ok">Continuer →</button>');
+  document.getElementById('mcl').onclick=closeModal;
+  document.getElementById('tst-ok').onclick=function(){var lid=document.getElementById('tst-loc').value;closeModal();openMsgModal(lid,via,tplId);};
+}
+
+/* ── UPLOAD DOC ── */
+function handleUploadDoc(locId,type){
+  var l=locataires.find(function(x){return x.id===locId;});
+  var d=documents.find(function(x){return x.locataire_id===locId&&x.type_doc===type;});
+  showModal('<div class="mhandle"></div><div class="mh3">'+DICONS[type]+' '+type+' — '+esc(l?l.prenom+' '+l.nom:'')+' <button class="mclose" id="mcl">×</button></div><div class="field"><label>Statut</label><select id="udoc-s">'+[['valide','Validé'],['attente','En attente'],['manquant','Manquant'],['perime','Périmé']].map(function(x){return'<option value="'+x[0]+'"'+(d&&x[0]===d.statut?' selected':'')+'>'+x[1]+'</option>';}).join('')+'</select></div><div class="field"><label>Nom / référence</label><input id="udoc-n" value="'+(d?esc(d.nom||''):'')+'" placeholder="ex: '+type+' '+esc(l?l.nom:'')+' 2024"></div><div class="field"><label>Date du document</label><input id="udoc-d" type="date" value="'+(d&&d.date_doc?d.date_doc:new Date().toISOString().slice(0,10))+'"></div><div class="field"><label>Fichier</label><div class="uzone" onclick="document.getElementById(\'udoc-f\').click()">📎 Choisir un fichier<br><span style="font-size:11px;color:var(--text3)">PDF, JPG, PNG</span></div><input type="file" id="udoc-f" accept=".pdf,.jpg,.jpeg,.png" style="display:none"><div id="udoc-fn" style="font-size:12px;color:var(--text2);margin-top:5px">'+(d&&d.nom?'📎 '+esc(d.nom):'')+'</div></div><button class="btn btnp" style="width:100%;margin-top:8px" id="udoc-ok">Enregistrer</button>');
+  document.getElementById('mcl').onclick=closeModal;
+  document.getElementById('udoc-f').onchange=function(){var f=this.files[0];if(f)document.getElementById('udoc-fn').textContent='📎 '+f.name;};
+  document.getElementById('udoc-ok').onclick=function(){
+    var nom=document.getElementById('udoc-n').value.trim();
+    var statut=document.getElementById('udoc-s').value;
+    var date=document.getElementById('udoc-d').value;
+    if(d){d.nom=nom;d.statut=statut;d.date_doc=date;}
+    else documents.push({id:uid('D'),locataire_id:locId,type_doc:type,nom:nom,statut:statut,date_doc:date});
+    save();closeModal();rLocataires();toast('✓ Document enregistré');
+  };
+}
+
+/* ── QUICK PAY ── */
+function handleQuickPay(locId,moisYm,du){
+  var l=locataires.find(function(x){return x.id===locId;});
+  var c=contrats.find(function(x){return x.locataire_id===locId&&x.est_actif;});
+  var g=c?garages.find(function(x){return x.id===c.garage_id;}):null;
+  if(!c){toast('⚠️ Pas de contrat actif');return;}
+  showModal('<div class="mhandle"></div><div class="mh3">💳 Encaisser — '+esc(l?l.prenom+' '+l.nom:'')+' <button class="mclose" id="mcl">×</button></div><div style="background:var(--bg3);border-radius:var(--rs);padding:10px 12px;margin-bottom:12px;font-size:13px"><div style="display:flex;justify-content:space-between;margin-bottom:4px"><span style="color:var(--text2)">Garage</span><b>'+(g?esc(g.nom_numero):'?')+'</b></div><div style="display:flex;justify-content:space-between;margin-bottom:4px"><span style="color:var(--text2)">Mois</span><b>'+fmtM(moisYm)+'</b></div><div style="display:flex;justify-content:space-between"><span style="color:var(--text2)">Loyer dû</span><b>'+du+' €</b></div></div><div class="f2"><div class="field"><label>Montant reçu (€)</label><input id="qp-r" type="number" value="'+du+'" step="0.01"></div><div class="field"><label>Date</label><input id="qp-d" type="date" value="'+new Date().toISOString().slice(0,10)+'"></div></div><div class="field"><label>Méthode</label><select id="qp-m"><option>virement</option><option>especes</option><option>cheque</option></select></div><div class="field"><label>Commentaire</label><textarea id="qp-c" style="min-height:50px"></textarea></div><div style="display:flex;gap:8px;margin-top:6px"><button class="btn btnp" style="flex:1" id="qp-ok">✓ Enregistrer</button>'+(l&&l.telephone?'<button class="btn btn-wa" id="qp-wa" style="flex:0 0 auto">💬 + Confirmer WA</button>':'')+'</div>');
+  document.getElementById('mcl').onclick=closeModal;
+  function doSave(sendMsg,via){
+    var montant=parseFloat(document.getElementById('qp-r').value)||0;
+    if(!montant){toast('⚠️ Montant requis');return;}
+    transactions.push({id:uid('T'),contrat_id:c.id,locataire_id:locId,garage_id:c.garage_id,date_transaction:document.getElementById('qp-d').value,mois_concerne:moisYm,montant:montant,type_mouvement:'loyer',statut_paiement:montant>=du?'ok':'partiel',methode:document.getElementById('qp-m').value,commentaire:document.getElementById('qp-c').value.trim()});
+    save();closeModal();renderAll();toast('✓ Paiement enregistré');
+    if(sendMsg)openMsgModal(locId,via,'TPL2');
+  }
+  document.getElementById('qp-ok').onclick=function(){doSave(false,'');};
+  if(l&&l.telephone)document.getElementById('qp-wa').onclick=function(){doSave(true,'wa');};
+}
+
+/* ── MODALS CRUD ── */
+function showModal(h){document.getElementById('mc').innerHTML=h;document.getElementById('overlay').style.display='flex';}
+function closeModal(){document.getElementById('overlay').style.display='none';}
+
+function mGarage(gid){
+  var g=gid?garages.find(function(x){return x.id===gid;}):null;
+  var lOpts=lots.map(function(l){return'<option value="'+l.id+'"'+(g&&l.id===g.lot_id?' selected':'')+'>'+esc(l.nom)+'</option>';}).join('');
+  var cA=g?contrats.find(function(c){return c.garage_id===g.id&&c.est_actif;}):null;
+  var locO='<option value="">— Aucun —</option>'+locataires.map(function(l){return'<option value="'+l.id+'"'+(cA&&l.id===cA.locataire_id?' selected':'')+'>'+esc(l.prenom)+' '+esc(l.nom)+'</option>';}).join('');
+  showModal('<div class="mhandle"></div><div class="mh3">'+(g?'✏️ Modifier':'🏠 Nouveau garage')+' <button class="mclose" id="mcl">×</button></div><div class="f2"><div class="field"><label>Nom / N°</label><input id="mg-n" value="'+(g?esc(g.nom_numero):'')+'" placeholder="Garage 1"></div><div class="field"><label>Lot</label><select id="mg-l"><option value="">Sans lot</option>'+lOpts+'</select></div></div><div class="f2"><div class="field"><label>Loyer (€)</label><input id="mg-lo" type="number" value="'+(g?g.loyer_net:'')+'" placeholder="80"></div><div class="field"><label>Statut</label><select id="mg-s">'+['libre','loue','travaux'].map(function(s){return'<option value="'+s+'"'+(g&&s===g.statut?' selected':'')+'>'+{libre:'Libre',loue:'Loué',travaux:'Travaux'}[s]+'</option>';}).join('')+'</select></div></div><div class="field"><label>Locataire</label><select id="mg-loc">'+locO+'</select></div><button class="btn btnp" style="width:100%;margin-top:6px" id="mg-sv">'+(g?'Enregistrer':'Ajouter')+'</button>');
+  document.getElementById('mcl').onclick=closeModal;
+  document.getElementById('mg-sv').onclick=function(){
+    var nom=document.getElementById('mg-n').value.trim();if(!nom){toast('⚠️ Nom requis');return;}
+    var data={nom_numero:nom,lot_id:document.getElementById('mg-l').value||null,loyer_net:parseFloat(document.getElementById('mg-lo').value)||0,statut:document.getElementById('mg-s').value};
+    if(g){Object.assign(g,data);}else{data.id=uid('G');garages.push(data);}
+    var nl=document.getElementById('mg-loc').value||null;
+    if(cA&&cA.locataire_id!==nl)cA.est_actif=false;
+    if(nl&&(!cA||cA.locataire_id!==nl)){contrats.push({id:uid('C'),locataire_id:nl,garage_id:g?g.id:data.id,date_debut:new Date().toISOString().slice(0,10),date_fin:null,loyer_convenu:data.loyer_net,caution_totale:data.loyer_net*2,caution_versee:0,est_actif:true});data.statut='loue';if(g)g.statut='loue';}
+    save();closeModal();renderAll();toast('✓ Garage '+(g?'modifié':'ajouté'));
+  };
+}
+
+function mLocataire(lid){
+  var l=lid?locataires.find(function(x){return x.id===lid;}):null;
+  showModal('<div class="mhandle"></div><div class="mh3">'+(l?'✏️ Modifier':'👤 Nouveau locataire')+' <button class="mclose" id="mcl">×</button></div><div class="f2"><div class="field"><label>Prénom</label><input id="ml-p" value="'+(l?esc(l.prenom||''):'')+'" placeholder="Jean"></div><div class="field"><label>Nom</label><input id="ml-n" value="'+(l?esc(l.nom):'')+'" placeholder="Dupont"></div></div><div class="f2"><div class="field"><label>Téléphone</label><input id="ml-t" value="'+(l?esc(l.telephone||''):'')+'" placeholder="06xxxxxxxx"></div><div class="field"><label>Email</label><input id="ml-e" type="email" value="'+(l?esc(l.email||''):'')+'" placeholder="jean@mail.com"></div></div><div class="f2"><div class="field"><label>Naissance</label><input id="ml-na" type="date" value="'+(l&&l.date_naissance?l.date_naissance:'')+'"></div><div class="field"><label>Profession</label><input id="ml-pr" value="'+(l?esc(l.profession||''):'')+'" placeholder="Technicien"></div></div><div class="field"><label>Notes</label><textarea id="ml-no">'+(l?esc(l.notes||''):'')+'</textarea></div><button class="btn btnp" style="width:100%;margin-top:6px" id="ml-sv">'+(l?'Enregistrer':'Ajouter')+'</button>');
+  document.getElementById('mcl').onclick=closeModal;
+  document.getElementById('ml-sv').onclick=function(){
+    var nom=document.getElementById('ml-n').value.trim();if(!nom){toast('⚠️ Nom requis');return;}
+    var data={prenom:document.getElementById('ml-p').value.trim(),nom:nom,telephone:document.getElementById('ml-t').value.trim(),email:document.getElementById('ml-e').value.trim(),date_naissance:document.getElementById('ml-na').value||null,profession:document.getElementById('ml-pr').value.trim(),notes:document.getElementById('ml-no').value.trim()};
+    if(l){Object.assign(l,data);}else{data.id=uid('L');locataires.push(data);}
+    save();closeModal();renderAll();toast('✓ Locataire '+(l?'modifié':'ajouté'));
+  };
+}
+
+function mPaiement(){
+  var locOpts=locataires.map(function(l){var c=contrats.find(function(x){return x.locataire_id===l.id&&x.est_actif;});var g=c?garages.find(function(x){return x.id===c.garage_id;}):null;return'<option value="'+l.id+'_'+(c?c.id:'')+'">'+esc(l.prenom)+' '+esc(l.nom)+(g?' — '+esc(g.nom_numero):'')+'</option>';}).join('');
+  showModal('<div class="mhandle"></div><div class="mh3">💳 Saisir un paiement <button class="mclose" id="mcl">×</button></div><div class="field"><label>Locataire</label><select id="mp-l">'+locOpts+'</select></div><div class="f2"><div class="field"><label>Mois</label><input id="mp-m" type="month" value="'+curMois+'"></div><div class="field"><label>Montant (€)</label><input id="mp-r" type="number" step="0.01" placeholder="80"></div></div><div class="f2"><div class="field"><label>Méthode</label><select id="mp-me"><option>virement</option><option>especes</option><option>cheque</option></select></div><div class="field"><label>Date</label><input id="mp-d" type="date" value="'+new Date().toISOString().slice(0,10)+'"></div></div><div class="field"><label>Commentaire</label><textarea id="mp-c"></textarea></div><button class="btn btnp" style="width:100%;margin-top:6px" id="mp-sv">Enregistrer</button>');
+  document.getElementById('mcl').onclick=closeModal;
+  document.getElementById('mp-sv').onclick=function(){
+    var parts=document.getElementById('mp-l').value.split('_');
+    var locId=parts[0],contratId=parts[1];
+    if(!contratId){toast('⚠️ Locataire sans contrat actif');return;}
+    var montant=parseFloat(document.getElementById('mp-r').value);
+    if(!montant){toast('⚠️ Montant requis');return;}
+    var c=contrats.find(function(x){return x.id===contratId;});
+    transactions.push({id:uid('T'),contrat_id:contratId,locataire_id:locId,garage_id:c?c.garage_id:null,date_transaction:document.getElementById('mp-d').value,mois_concerne:document.getElementById('mp-m').value,montant:montant,type_mouvement:'loyer',statut_paiement:montant>=(c?c.loyer_convenu:0)?'ok':'partiel',methode:document.getElementById('mp-me').value,commentaire:document.getElementById('mp-c').value.trim()});
+    curMois=document.getElementById('mp-m').value;save();closeModal();renderAll();toast('✓ Paiement enregistré');
+  };
+}
+
+function mTemplate(tid){
+  var t=tid?templates.find(function(x){return x.id===tid;}):null;
+  showModal('<div class="mhandle"></div><div class="mh3">'+(t?'✏️ Modifier':'➕ Nouveau template')+' <button class="mclose" id="mcl">×</button></div><div class="field"><label>Nom</label><input id="tpl-n" value="'+(t?esc(t.nom):'')+'" placeholder="Relance loyer impayé"></div><div class="field"><label>Message</label><textarea id="tpl-b" style="min-height:160px">'+(t?esc(t.corps):'')+' </textarea></div><div style="font-size:11px;color:var(--text3);margin-bottom:10px">Variables : <code>{{prenom}}</code> <code>{{nom}}</code> <code>{{montant}}</code> <code>{{mois}}</code> <code>{{garage}}</code> <code>{{debut}}</code> <code>{{document}}</code></div><button class="btn btnp" style="width:100%;margin-top:4px" id="tpl-sv">'+(t?'Enregistrer':'Créer')+'</button>');
+  document.getElementById('mcl').onclick=closeModal;
+  document.getElementById('tpl-sv').onclick=function(){
+    var nom=document.getElementById('tpl-n').value.trim();var corps=document.getElementById('tpl-b').value.trim();
+    if(!nom||!corps){toast('⚠️ Nom et message requis');return;}
+    if(t){t.nom=nom;t.corps=corps;}else templates.push({id:uid('TPL'),nom:nom,corps:corps,type:'custom'});
+    save();closeModal();rTemplates();toast('✓ Template '+(t?'modifié':'créé'));
+  };
+}
+
+function mConfirm(msg,fn){
+  showModal('<div class="mhandle"></div><div class="mh3">Confirmer <button class="mclose" id="mcl">×</button></div><div class="cbox"><p>'+msg+'</p><div class="ca"><button class="btn btnd" id="mc-ok">Supprimer</button><button class="btn" id="mc-no">Annuler</button></div></div>');
+  document.getElementById('mcl').onclick=closeModal;
+  document.getElementById('mc-no').onclick=closeModal;
+  document.getElementById('mc-ok').onclick=fn;
+}
+
+/* ── EVENTS ── */
+document.addEventListener('click',function(e){
+  var tab=e.target.closest('[data-tab]');if(tab){gotoTab(parseInt(tab.dataset.tab));return;}
+  var bn=e.target.closest('[data-bnav]');if(bn){gotoTab(parseInt(bn.dataset.bnav));return;}
+  if(e.target.id==='btn-add-gar'){mGarage(null);return;}
+  if(e.target.id==='btn-add-loc'){mLocataire(null);return;}
+  if(e.target.id==='btn-add-pay'){mPaiement();return;}
+  if(e.target.id==='btn-add-tpl'){mTemplate(null);return;}
+  var eg=e.target.closest('[data-eg]');if(eg){mGarage(eg.dataset.eg);return;}
+  var dg=e.target.closest('[data-dg]');if(dg){var gg=garages.find(function(x){return x.id===dg.dataset.dg;});mConfirm('Supprimer '+gg.nom_numero+' ?',function(){garages=garages.filter(function(x){return x.id!==dg.dataset.dg;});save();closeModal();renderAll();toast('🗑 Supprimé');});return;}
+  var el=e.target.closest('[data-el]');if(el){mLocataire(el.dataset.el);return;}
+  var dl=e.target.closest('[data-dl]');if(dl){var ll=locataires.find(function(x){return x.id===dl.dataset.dl;});mConfirm('Supprimer '+ll.prenom+' '+ll.nom+' ?',function(){locataires=locataires.filter(function(x){return x.id!==dl.dataset.dl;});save();closeModal();renderAll();toast('🗑 Supprimé');});return;}
+  var wa=e.target.closest('[data-wa]');if(wa){openMsgModal(wa.dataset.wa,'wa',null);return;}
+  var sms=e.target.closest('[data-sms]');if(sms){openMsgModal(sms.dataset.sms,'sms',null);return;}
+  var ud=e.target.closest('[data-upload-doc]');if(ud){handleUploadDoc(ud.dataset.uploadDoc,ud.dataset.uploadType);return;}
+  var qp=e.target.closest('[data-quick-pay]');if(qp){handleQuickPay(qp.dataset.quickPay,qp.dataset.quickMois,parseFloat(qp.dataset.quickDu));return;}
+  var etpl=e.target.closest('[data-edit-tpl]');if(etpl){mTemplate(etpl.dataset.editTpl);return;}
+  var dtpl=e.target.closest('[data-del-tpl]');if(dtpl){mConfirm('Supprimer ce template ?',function(){templates=templates.filter(function(x){return x.id!==dtpl.dataset.delTpl;});save();closeModal();rTemplates();toast('🗑 Supprimé');});return;}
+  var stpl=e.target.closest('[data-send-tpl]');if(stpl){openSendTplModal(stpl.dataset.sendTpl,stpl.dataset.sendVia);return;}
+  if(e.target===document.getElementById('overlay'))closeModal();
+});
+document.getElementById('fl').addEventListener('change',rGarages);
+document.getElementById('fs').addEventListener('change',rGarages);
+document.getElementById('sloc').addEventListener('input',rLocataires);
+document.getElementById('fp').addEventListener('change',rPaiements);
+
+function toast(msg){var t=document.getElementById('toast');t.textContent=msg;t.className='toast show';setTimeout(function(){t.className='toast';},2800);}
+
+load();renderAll();
+})();
+</script>
+</body>
+</html>
