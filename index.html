@@ -347,7 +347,7 @@ function gotoTab(n){
   document.querySelectorAll('.bnbtn').forEach(function(b){b.className='bnbtn'+(parseInt(b.dataset.bnav)===n?' on':'');});
 }
 
-function showRef(which){
+window.showRef=function(which){
   ['lots','garages','locataires'].forEach(function(r){
     document.getElementById('ref-'+r).style.display=r===which?'block':'none';
     var btn=document.getElementById('stb-'+r);
