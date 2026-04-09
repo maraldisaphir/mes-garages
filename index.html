@@ -548,11 +548,7 @@ function mLot(lid){
       else{r=await sb.from('lots').insert(data).select().single();lots.push(r.data);}
       if(r.error) throw r.error;
       closeModal();
-      var fl=document.getElementById('fl');
-      if(fl) fl.innerHTML='<option value="">Tous les lots</option>'+lots.map(function(x){return'<option value="'+x.id+'">'+esc(x.nom)+'</option>';}).join('');
-      var dfl=document.getElementById('df-lot');
-      if(dfl) dfl.innerHTML='<option value="all">Tous les lots</option>'+lots.map(function(x){return'<option value="'+x.id+'">'+esc(x.nom)+'</option>';}).join('');
-      rLots();rGarages();renderDashboard();
+      rLots();rGarages();renderDash();
       toast('Lot '+(l?'modifie':'cree'));
     }catch(e){toast('Erreur : '+e.message);}
   };
@@ -811,22 +807,13 @@ document.addEventListener('click',function(e){
   var elot=e.target.closest('[data-elot]');if(elot){mLot(elot.dataset.elot);return;}
   var dlot=e.target.closest('[data-dlot]');if(dlot){
     var lot=lots.find(function(x){return x.id===dlot.dataset.dlot;});
-    var nbG=garages.filter(function(g){return g.lot_id===dlot.dataset.dlot;}).length;
-    if(nbG>0){toast('⚠️ Supprimez les '+nbG+' garage(s) de ce lot avant');return;}
-    mConfirm('Supprimer le lot "'+lot.nom+'" ?',async function(){
-      await sb.from('lots').delete().eq('id',dlot.dataset.dlot);
-      lots=lots.filter(function(x){return x.id!==dlot.dataset.dlot;});
-      closeModal();fillLotFilter();rLots();renderDashboard();toast('🗑 Lot supprimé');
-    });return;}
-  var elot=e.target.closest('[data-elot]');if(elot){mLot(elot.dataset.elot);return;}
-  var dlot=e.target.closest('[data-dlot]');if(dlot){
-    var lot=lots.find(function(x){return x.id===dlot.dataset.dlot;});
+    if(!lot) return;
     var nbG=garages.filter(function(g){return g.lot_id===dlot.dataset.dlot;}).length;
     if(nbG>0){toast('Supprimez les '+nbG+' garage(s) de ce lot avant');return;}
-    mConfirm('Supprimer le lot '+lot.nom+' ?',async function(){
-      var r=await sb.from('lots').delete().eq('id',dlot.dataset.dlot);
+    mConfirm('Supprimer le lot '+esc(lot.nom)+' ?',async function(){
+      await sb.from('lots').delete().eq('id',dlot.dataset.dlot);
       lots=lots.filter(function(x){return x.id!==dlot.dataset.dlot;});
-      closeModal();rLots();renderDashboard();toast('Lot supprime');
+      closeModal();rLots();renderDash();toast('Lot supprime');
     });return;}
   var eg=e.target.closest('[data-eg]');if(eg){mGarage(eg.dataset.eg);return;}
   var dg=e.target.closest('[data-dg]');if(dg){var gg=garages.find(function(x){return x.id===dg.dataset.dg;});mConfirm('Supprimer '+gg.nom_numero+' ?',function(){garages=garages.filter(function(x){return x.id!==dg.dataset.dg;});save();closeModal();renderAll();toast('🗑 Supprimé');});return;}
