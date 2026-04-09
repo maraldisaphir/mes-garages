@@ -148,6 +148,7 @@ button,input,select,textarea{font-family:inherit;}
   <div class="hd-row">
     <div><div class="hd-title">🏠 Mes Garages</div><div class="hd-sub" id="sub">Démo locale</div></div>
     <div class="hd-btns">
+      <button class="btn btns" id="btn-add-lot">+ Lot</button>
       <button class="btn btns" id="btn-add-loc">+ Locataire</button>
       <button class="btn btns btnp" id="btn-add-gar">+ Garage</button>
       <button class="btn btns" id="btn-logout" style="color:var(--text3)">⎋</button>
@@ -753,10 +754,21 @@ function mConfirm(msg,fn){
 document.addEventListener('click',function(e){
   var tab=e.target.closest('[data-tab]');if(tab){gotoTab(parseInt(tab.dataset.tab));return;}
   var bn=e.target.closest('[data-bnav]');if(bn){gotoTab(parseInt(bn.dataset.bnav));return;}
+  if(e.target.id==='btn-add-lot'){mLot(null);return;}
   if(e.target.id==='btn-add-gar'){mGarage(null);return;}
   if(e.target.id==='btn-add-loc'){mLocataire(null);return;}
   if(e.target.id==='btn-add-pay'){mPaiement();return;}
   if(e.target.id==='btn-add-tpl'){mTemplate(null);return;}
+  var elot=e.target.closest('[data-elot]');if(elot){mLot(elot.dataset.elot);return;}
+  var dlot=e.target.closest('[data-dlot]');if(dlot){
+    var lot=lots.find(function(x){return x.id===dlot.dataset.dlot;});
+    var nbG=garages.filter(function(g){return g.lot_id===dlot.dataset.dlot;}).length;
+    if(nbG>0){toast('⚠️ Supprimez les '+nbG+' garage(s) de ce lot avant');return;}
+    mConfirm('Supprimer le lot "'+lot.nom+'" ?',async function(){
+      await sb.from('lots').delete().eq('id',dlot.dataset.dlot);
+      lots=lots.filter(function(x){return x.id!==dlot.dataset.dlot;});
+      closeModal();fillLotFilter();rLots();renderDashboard();toast('🗑 Lot supprimé');
+    });return;}
   var eg=e.target.closest('[data-eg]');if(eg){mGarage(eg.dataset.eg);return;}
   var dg=e.target.closest('[data-dg]');if(dg){var gg=garages.find(function(x){return x.id===dg.dataset.dg;});mConfirm('Supprimer '+gg.nom_numero+' ?',function(){garages=garages.filter(function(x){return x.id!==dg.dataset.dg;});save();closeModal();renderAll();toast('🗑 Supprimé');});return;}
   var el=e.target.closest('[data-el]');if(el){mLocataire(el.dataset.el);return;}
