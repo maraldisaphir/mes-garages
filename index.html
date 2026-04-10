@@ -27,10 +27,7 @@ button,input,select,textarea{font-family:inherit;}
 .hd-title{font-size:18px;font-weight:700;letter-spacing:-.3px;}
 .hd-sub{font-size:11px;color:var(--text2);margin-top:1px;}
 .hd-btns{display:flex;gap:5px;}
-.tabs{display:flex;gap:3px;overflow-x:auto;scrollbar-width:none;}
-.tabs::-webkit-scrollbar{display:none;}
-.tab{flex-shrink:0;padding:8px 12px;border-radius:var(--rs) var(--rs) 0 0;border:1px solid transparent;background:transparent;color:var(--text3);font-size:13px;cursor:pointer;white-space:nowrap;border-bottom:none;}
-.tab.on{background:var(--bg2);border-color:var(--border);border-bottom-color:var(--bg2);color:var(--text);font-weight:600;}
+
 #content{padding:14px 14px 90px;}
 .sec{display:none;}.sec.on{display:block;}
 .btn{padding:8px 13px;border-radius:var(--rs);border:1px solid var(--border2);background:var(--bg2);color:var(--text);font-size:13px;cursor:pointer;font-weight:500;white-space:nowrap;}
@@ -68,6 +65,10 @@ button,input,select,textarea{font-family:inherit;}
 .kpi{background:var(--bg3);border-radius:var(--rs);padding:7px 10px;}
 .kval{font-size:17px;font-weight:700;letter-spacing:-.3px;}
 .klbl{font-size:10px;color:var(--text2);margin-top:1px;}
+.kpi-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:5px;margin-bottom:10px;}
+.kpi{background:var(--bg3);border-radius:var(--rs);padding:7px 10px;}
+.kval{font-size:17px;font-weight:700;letter-spacing:-.3px;}
+.klbl{font-size:11px;color:var(--text2);margin-top:1px;}
 .cg{color:var(--green)}.cr{color:var(--red)}.ca{color:var(--amber)}.cb{color:var(--accent)}
 .dash-filters{display:flex;gap:7px;margin-bottom:14px;flex-wrap:wrap;}
 .dash-filters select{font-size:13px;padding:7px 10px;border-radius:var(--rs);border:1px solid var(--border2);background:var(--bg2);color:var(--text);}
@@ -155,13 +156,7 @@ button,input,select,textarea{font-family:inherit;}
       <input type="file" id="import-file" accept=".json" style="display:none">
     </div>
   </div>
-  <div class="tabs">
-    <button class="tab on" data-tab="0">📊 Dashboard</button>
-    <button class="tab" data-tab="1">🗂 Références</button>
-    <button class="tab" data-tab="2">📋 Contrats</button>
-    <button class="tab" data-tab="3">💳 Paiements</button>
-    <button class="tab" data-tab="4">💬 Messages</button>
-  </div>
+
 </div>
 
 <div id="content">
@@ -172,11 +167,9 @@ button,input,select,textarea{font-family:inherit;}
     <div class="dash-filters">
       <select id="df-an"></select>
       <select id="df-lot"><option value="all">Tous les lots</option></select>
-      <select id="df-st"><option value="all">Tous statuts</option><option value="ok">Payés</option><option value="no">Impayés</option><option value="part">Partiels</option></select>
-      <select id="df-loc"><option value="all">Tous locataires</option></select>
     </div>
     <div class="heat-wrap"><table class="ht"><thead id="ht-head"></thead><tbody id="ht-body"></tbody></table></div>
-    <div class="hleg" style="margin-top:10px">
+    <div class="hleg" style="margin-top:8px">
       <div class="hl"><div class="hld" style="background:rgba(30,200,122,0.25);border:1px solid #1ec87a"></div>Payé</div>
       <div class="hl"><div class="hld" style="background:rgba(232,160,48,0.25);border:1px solid #e8a030"></div>Partiel</div>
       <div class="hl"><div class="hld" style="background:rgba(224,69,69,0.25);border:1px solid #e04545"></div>Impayé</div>
@@ -361,7 +354,6 @@ var curTab=0;
 function gotoTab(n){
   curTab=n;
   document.querySelectorAll('.sec').forEach(function(s,i){s.className='sec'+(i===n?' on':'');});
-  document.querySelectorAll('.tab').forEach(function(b){b.className='tab'+(parseInt(b.dataset.tab)===n?' on':'');});
   document.querySelectorAll('.bnbtn').forEach(function(b){b.className='bnbtn'+(parseInt(b.dataset.bnav)===n?' on':'');});
 }
 
@@ -524,16 +516,14 @@ function rDashboard(){
   }
   var dfLot=document.getElementById('df-lot'),cl=dfLot.value||'all';
   dfLot.innerHTML='<option value="all">Tous les lots</option>'+DB.lots.map(function(l){return'<option value="'+l.id+'"'+(l.id===cl?' selected':'')+'>'+esc(l.nom)+'</option>';}).join('');
-  var dfLoc=document.getElementById('df-loc'),cloc=dfLoc.value||'all';
-  dfLoc.innerHTML='<option value="all">Tous locataires</option>'+DB.locataires.map(function(l){return'<option value="'+l.id+'"'+(l.id===cloc?' selected':'')+'>'+esc(l.prenom||'')+' '+esc(l.nom)+'</option>';}).join('');
+
   rHeat();
 }
 
 function rHeat(){
   var dfAn=document.getElementById('df-an').value;
   var dfLot=document.getElementById('df-lot').value;
-  var dfSt=document.getElementById('df-st').value;
-  var dfLoc=document.getElementById('df-loc').value;
+
   var fy=dfAn==='all'?getYears():[dfAn];
   var cols=[];fy.forEach(function(y){for(var m=0;m<12;m++)cols.push({y:parseInt(y),m:m});});
   var txIdx={};
@@ -565,19 +555,55 @@ function rHeat(){
     var gids=DB.garages.filter(function(g){return g.lot_id===dfLot;}).map(function(g){return g.id;});
     allC=allC.filter(function(c){return getGids(c).some(function(gid){return gids.includes(gid);});});
   }
-  if(dfLoc!=='all')allC=allC.filter(function(c){return c.locataire_id===dfLoc;});
-  if(dfSt!=='all')allC=allC.filter(function(c){return cols.some(function(col){return getSt(c,col.y,col.m)===dfSt;});});
+
   // KPIs
-  var kC=DB.contrats.filter(function(c){return c.est_actif;});
-  var tm=kC.reduce(function(s,c){return s+parseFloat(c.loyer_mensuel||0);},0);
-  var ok=0,no=0,part=0,tot=0;
-  kC.forEach(function(c){cols.forEach(function(col){var s=getSt(c,col.y,col.m);if(s==='vid'||s==='fut')return;tot++;if(s==='ok')ok++;else if(s==='part')part++;else if(s==='no')no++;});});
-  var taux=tot>0?Math.round((ok+part)/tot*100):0;
-  document.getElementById('kpis').innerHTML=
-    '<div class="kpi"><div class="kval cb">'+kC.length+'</div><div class="klbl">Contrats actifs</div></div>'+
-    '<div class="kpi"><div class="kval cg">'+Math.round(tm)+' €</div><div class="klbl">Loyers / mois</div></div>'+
-    '<div class="kpi"><div class="kval '+(no>0?'cr':'cg')+'">'+no+'</div><div class="klbl">Impayés</div></div>'+
-    '<div class="kpi"><div class="kval '+(taux>=95?'cg':taux>=80?'ca':'cr')+'">'+taux+'%</div><div class="klbl">Recouvrement</div></div>';
+  // ── KPIs ──────────────────────────────────────────────────
+  var dfLot2=document.getElementById('df-lot').value;
+  var dfAn2=document.getElementById('df-an').value;
+  var filtYears2=dfAn2==='all'?getYears():[dfAn2];
+  // Loyers mensuels actifs
+  var activeC=DB.contrats.filter(function(c){return c.est_actif;});
+  var filtC=dfLot2==='all'?activeC:activeC.filter(function(c){
+    var gids=DB.garages.filter(function(g){return g.lot_id===dfLot2;}).map(function(g){return g.id;});
+    return getGids(c).some(function(gid){return gids.includes(gid);});
+  });
+  var nbActifs=filtC.length;
+  var loyerMensuel=filtC.reduce(function(s,c){return s+parseFloat(c.loyer_mensuel||0);},0);
+  // Impayés mois en cours
+  var nbImpayes=filtC.filter(function(c){
+    var txM=DB.transactions.filter(function(t){return t.contrat_id===c.id&&t.mois_concerne===curMois&&t.type_mouvement==='loyer';});
+    var recu=txM.reduce(function(s,t){return s+parseFloat(t.montant||0);},0);
+    return recu===0;
+  }).length;
+  // Loyers perçus sur l'année filtrée
+  var totalPercuLot=0,totalPercuAll=0;
+  DB.transactions.forEach(function(t){
+    if(t.type_mouvement!=='loyer')return;
+    if(!filtYears2.includes(t.mois_concerne.slice(0,4)))return;
+    var cx=DB.contrats.find(function(x){return x.id===t.contrat_id;});
+    if(!cx)return;
+    totalPercuAll+=parseFloat(t.montant||0);
+    if(dfLot2==='all'){totalPercuLot+=parseFloat(t.montant||0);}
+    else{
+      var gids2=DB.garages.filter(function(g){return g.lot_id===dfLot2;}).map(function(g){return g.id;});
+      if(getGids(cx).some(function(gid){return gids2.includes(gid);}))totalPercuLot+=parseFloat(t.montant||0);
+    }
+  });
+  var totalPercu=totalPercuLot;
+  var lotLabel=dfLot2==='all'?'Tous lots':(DB.lots.find(function(l){return l.id===dfLot2;})||{nom:'?'}).nom;
+  var yearLabel=dfAn2==='all'?'Année en cours':dfAn2;
+  var kpisEl=document.getElementById('kpis');
+  if(kpisEl){
+    var khtml=
+      '<div class="kpi"><div class="kval cb">'+nbActifs+'</div><div class="klbl">Contrats actifs</div></div>'+
+      '<div class="kpi"><div class="kval cg">'+Math.round(loyerMensuel)+' €</div><div class="klbl">Loyers / mois</div></div>'+
+      '<div class="kpi"><div class="kval '+(nbImpayes>0?'cr':'cg')+'">'+nbImpayes+'</div><div class="klbl">Impayés ce mois</div></div>'+
+      '<div class="kpi"><div class="kval cg">'+Math.round(totalPercuLot)+' €</div><div class="klbl">Perçu '+esc(lotLabel)+' ('+yearLabel+')</div></div>';
+    if(dfLot2!=='all'){
+      khtml+='<div class="kpi" style="grid-column:span 2"><div class="kval cb">'+Math.round(totalPercuAll)+' €</div><div class="klbl">Perçu tous lots confondus ('+yearLabel+')</div></div>';
+    }
+    kpisEl.innerHTML=khtml;
+  }
   // Table
   var colSpan=2+cols.length;
   var th='<tr><th style="min-width:75px;position:sticky;left:0;z-index:3;background:var(--bg3)">Locataire</th><th style="min-width:32px;text-align:right;font-size:10px;padding:5px 3px">€/m</th>';
@@ -604,8 +630,9 @@ function rHeat(){
     tb+='</tr>';
   });
   document.getElementById('ht-body').innerHTML=tb;
+
 }
-['df-an','df-lot','df-st','df-loc'].forEach(function(id){document.getElementById(id).addEventListener('change',rHeat);});
+['df-an','df-lot'].forEach(function(id){document.getElementById(id).addEventListener('change',rHeat);});
 
 // ═══════════════════════════════════════
 // ── LOTS ───────────────────────────────
