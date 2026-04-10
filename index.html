@@ -64,10 +64,10 @@ button,input,select,textarea{font-family:inherit;}
 .av2{background:var(--amberbg);color:var(--amber);}
 .av3{background:var(--redbg);color:var(--red);}
 .av4{background:var(--purplebg);color:var(--purple);}
-.kpi-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin-bottom:16px;}
-.kpi{background:var(--bg3);border-radius:var(--rs);padding:12px 14px;}
-.kval{font-size:24px;font-weight:700;letter-spacing:-.5px;}
-.klbl{font-size:11px;color:var(--text2);margin-top:2px;}
+.kpi-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:5px;margin-bottom:10px;}
+.kpi{background:var(--bg3);border-radius:var(--rs);padding:7px 10px;}
+.kval{font-size:17px;font-weight:700;letter-spacing:-.3px;}
+.klbl{font-size:10px;color:var(--text2);margin-top:1px;}
 .cg{color:var(--green)}.cr{color:var(--red)}.ca{color:var(--amber)}.cb{color:var(--accent)}
 .dash-filters{display:flex;gap:7px;margin-bottom:14px;flex-wrap:wrap;}
 .dash-filters select{font-size:13px;padding:7px 10px;border-radius:var(--rs);border:1px solid var(--border2);background:var(--bg2);color:var(--text);}
@@ -141,7 +141,7 @@ button,input,select,textarea{font-family:inherit;}
 .empty{text-align:center;padding:40px 20px;color:var(--text3);}
 .empty .ei{font-size:34px;margin-bottom:8px;}
 .empty p{font-size:14px;}
-@media(min-width:600px){.kpi-grid{grid-template-columns:repeat(4,1fr);}}
+
 </style>
 </head>
 <body>
@@ -372,6 +372,30 @@ function openFicheClient(locId){
 }
 window.openFicheClient=openFicheClient;
 
+function mQuickPayDash(contratId,loyer_du){
+  var c=DB.contrats.find(function(x){return x.id===contratId;});
+  var l=c?getLoc(c.locataire_id):{nom:'?'};
+  var txCur=DB.transactions.filter(function(t){return t.contrat_id===contratId&&t.mois_concerne===curMois&&t.type_mouvement==='loyer';});
+  var recu=txCur.reduce(function(s,t){return s+parseFloat(t.montant||0);},0);
+  var reste=Math.max(0,loyer_du-recu);
+  showModal('<div class="mhandle"></div><div class="mh3">💳 '+esc(l.nom)+' — '+fmtM(curMois)+' <button class="mclose" id="mcl">×</button></div>'+
+    '<div style="font-size:12px;color:var(--text2);margin-bottom:10px">Loyer : '+loyer_du+' € · Déjà reçu : '+Math.round(recu)+' € · Reste : '+Math.round(reste)+' €</div>'+
+    '<div class="pq-row" style="margin-bottom:10px">'+
+      '<input type="number" id="pqd-m" value="'+reste+'" style="width:110px;flex:none" placeholder="Montant €">'+
+      '<select id="pqd-me" style="width:120px;flex:none"><option value="virement">Virement</option><option value="especes">Espèces</option><option value="cheque">Chèque</option></select>'+
+    '</div>'+
+    '<button class="btn btnp" style="width:100%" id="pqd-sv">✓ Enregistrer</button>');
+  document.getElementById('mcl').onclick=closeModal;
+  document.getElementById('pqd-sv').onclick=function(){
+    var montant=parseFloat(document.getElementById('pqd-m').value);
+    if(!montant){toast('Montant requis');return;}
+    var total=recu+montant;
+    var tx={id:uid(),contrat_id:contratId,locataire_id:c?c.locataire_id:null,date_transaction:new Date().toISOString().slice(0,10),mois_concerne:curMois,montant:montant,type_mouvement:'loyer',statut_paiement:total>=loyer_du?'ok':'partiel',methode:document.getElementById('pqd-me').value,commentaire:''};
+    DB.transactions.unshift(tx);
+    save();closeModal();rContrats();rPaiements();rHeat();toast('✓ '+montant+' € enregistré');
+  };
+}
+
 function renderAll(){
   rDashboard();rLotFilter();rLots();rGarages();rLocataires();
   rContratFilter();rContrats();rMoisTabs();rPaiements();rTemplates();
@@ -431,8 +455,9 @@ function rHeat(){
     if(y>CUR_Y||(y===CUR_Y&&m>CUR_M))return'fut';
     var txs=txIdx[c.id+'_'+ym]||[];
     if(!txs.length)return'no';
-    var sp=txs[0].statut_paiement;
-    return(sp==='ok')?'ok':(sp==='partiel')?'part':'no';
+    var recu=txs.reduce(function(s,t){return s+parseFloat(t.montant||0);},0);
+    var du=parseFloat(c.loyer_mensuel||0);
+    return recu>=du?'ok':recu>0?'part':'no';
   }
   var allC=DB.contrats;
   if(dfLot!=='all'){
@@ -461,7 +486,7 @@ function rHeat(){
   if(!allC.length){tb='<tr><td colspan="'+colSpan+'" style="padding:30px;text-align:center;color:var(--text3)">Aucun contrat — créez-en un dans l\'onglet Contrats</td></tr>';}
   else allC.forEach(function(c){
     var l=getLoc(c.locataire_id);
-    tb+='<tr><td style="position:sticky;left:0;z-index:1;background:var(--bg2);padding:3px 5px;max-width:75px"><div style="font-size:11px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;cursor:pointer;color:var(--accent)" data-ofc="'+c.locataire_id+'">'+esc(l.nom)+'</div></td><td class="loy">'+(c.loyer_mensuel||0)+' €</td><td class="inf"><div class="ts">'+esc(lotNamesForContrat(c))+'</div></td>';
+    tb+='<tr><td style="position:sticky;left:0;z-index:1;background:var(--bg2);padding:3px 5px;max-width:75px"><div style="font-size:11px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;cursor:pointer;color:var(--accent)" data-ofc="'+c.locataire_id+'">'+esc(l.nom)+'</div></td><td style="padding:4px;text-align:right;font-size:11px;color:var(--text2);white-space:nowrap">'+(c.loyer_mensuel||0)+'</td>';
     cols.forEach(function(col){
       var ic=col.y===CUR_Y&&col.m===CUR_M;
       var s=getSt(c,col.y,col.m);
@@ -651,6 +676,7 @@ function rContrats(){
     var recu=txCur.reduce(function(s,t){return s+parseFloat(t.montant||0);},0);
     var du=parseFloat(c.loyer_mensuel||0);
     var lSt=!c.est_actif?'cloture':recu===0?'impaye':recu>=du?'ok':'partiel';
+    var reste=Math.max(0,du-recu);
     h+='<div class="card"><div class="chd">'+
       '<div><div class="ctitle">'+esc(l.prenom||'')+' '+esc(l.nom)+'</div>'+
       '<div style="font-size:12px;color:var(--text2)">'+esc(gNamesForContrat(c))+'</div></div>'+
@@ -668,7 +694,7 @@ function rContrats(){
       (c.est_actif?
         '<div class="pq"><div class="pq-title">💳 Loyer '+fmtM(curMois)+' — <span class="badge '+lSt+'">'+(lSt==='ok'?'Payé':lSt==='partiel'?'Partiel':'Impayé')+'</span></div>'+
         '<div class="pq-row">'+
-          '<input type="number" id="pq-'+c.id+'" value="'+du+'" style="width:100px;flex:none">'+
+          '<input type="number" id="pq-'+c.id+'" value="'+reste+'" style="width:100px;flex:none">'+
           '<select id="pqm-'+c.id+'" style="width:110px;flex:none"><option value="virement">Virement</option><option value="especes">Espèces</option><option value="cheque">Chèque</option></select>'+
           '<button class="btn btns btnp" onclick="quickPay(\''+c.id+'\','+du+')">✓ Enregistrer</button>'+
         '</div>'+
@@ -718,15 +744,20 @@ function mContrat(cid){
   };
 }
 
-function quickPay(contratId,loyer_du){
-  var mEl=document.getElementById('pq-'+contratId);
-  var meEl=document.getElementById('pqm-'+contratId);
+function quickPay(contratId,loyer_du,moisTarget){
+  var mois=moisTarget||curMois;
+  var mEl=document.getElementById('pq-'+contratId+(moisTarget?'-'+moisTarget:''));
+  var meEl=document.getElementById('pqm-'+contratId+(moisTarget?'-'+moisTarget:''));
   var montant=parseFloat(mEl?mEl.value:0);
   if(!montant){toast('Entrez un montant');return;}
   var c=DB.contrats.find(function(x){return x.id===contratId;});
-  var tx={id:uid(),contrat_id:contratId,locataire_id:c?c.locataire_id:null,date_transaction:new Date().toISOString().slice(0,10),mois_concerne:curMois,montant:montant,type_mouvement:'loyer',statut_paiement:montant>=loyer_du?'ok':'partiel',methode:meEl?meEl.value:'virement',commentaire:''};
+  // Sum existing payments for this month to determine status
+  var dejaPaye=DB.transactions.filter(function(t){return t.contrat_id===contratId&&t.mois_concerne===mois&&t.type_mouvement==='loyer';}).reduce(function(s,t){return s+parseFloat(t.montant||0);},0);
+  var totalApres=dejaPaye+montant;
+  var sp=totalApres>=loyer_du?'ok':'partiel';
+  var tx={id:uid(),contrat_id:contratId,locataire_id:c?c.locataire_id:null,date_transaction:new Date().toISOString().slice(0,10),mois_concerne:mois,montant:montant,type_mouvement:'loyer',statut_paiement:sp,methode:meEl?meEl.value:'virement',commentaire:''};
   DB.transactions.unshift(tx);
-  save();rContrats();rPaiements();rHeat();toast('✓ '+montant+' € enregistré pour '+fmtM(curMois));
+  save();rContrats();rPaiements();rHeat();toast('✓ '+montant+' € enregistré pour '+fmtM(mois));
 }
 window.quickPay=quickPay;
 
@@ -788,16 +819,33 @@ function mPaiement(){
     '<div class="f2"><div class="field"><label>Méthode</label><select id="mp-me"><option value="virement">Virement</option><option value="especes">Espèces</option><option value="cheque">Chèque</option></select></div>'+
     '<div class="field"><label>Date</label><input id="mp-d" type="date" value="'+new Date().toISOString().slice(0,10)+'"></div></div>'+
     '<div class="field"><label>Commentaire</label><textarea id="mp-co"></textarea></div>'+
-    '<button class="btn btnp" style="width:100%;margin-top:6px" id="mp-sv">Enregistrer</button>');
+    '<div style="background:var(--bg4);border-radius:var(--rs);padding:10px 12px;margin-top:8px;font-size:12px;color:var(--text2)">'+
+    '💡 <b style="color:var(--text)">Ventilation sur 2 mois</b> (optionnel)<br>'+
+    '<div style="display:flex;gap:7px;margin-top:7px;flex-wrap:wrap">'+
+    '<input type="number" id="mp-m2" placeholder="Mois 2 (AAAA-MM)" style="font-size:12px;padding:6px 8px;border-radius:var(--rs);border:1px solid var(--border2);background:var(--bg3);color:var(--text);width:130px">'+
+    '<input type="number" id="mp-r2" placeholder="Montant mois 2 (€)" step="0.01" style="font-size:12px;padding:6px 8px;border-radius:var(--rs);border:1px solid var(--border2);background:var(--bg3);color:var(--text);width:140px">'+
+    '</div></div>'+
+    '<button class="btn btnp" style="width:100%;margin-top:10px" id="mp-sv">Enregistrer</button>');
   document.getElementById('mcl').onclick=closeModal;
   document.getElementById('mp-sv').onclick=function(){
     var cid=document.getElementById('mp-c').value;if(!cid){toast('Contrat requis');return;}
     var montant=parseFloat(document.getElementById('mp-r').value);if(!montant){toast('Montant requis');return;}
     var c=DB.contrats.find(function(x){return x.id===cid;});
-    var tx={id:uid(),contrat_id:cid,locataire_id:c?c.locataire_id:null,date_transaction:document.getElementById('mp-d').value,mois_concerne:document.getElementById('mp-m').value,montant:montant,type_mouvement:'loyer',statut_paiement:montant>=(c?parseFloat(c.loyer_mensuel||0):0)?'ok':'partiel',methode:document.getElementById('mp-me').value,commentaire:document.getElementById('mp-co').value.trim()};
+    var du=c?parseFloat(c.loyer_mensuel||0):0;
+    var mois1=document.getElementById('mp-m').value;
+    var deja1=DB.transactions.filter(function(t){return t.contrat_id===cid&&t.mois_concerne===mois1&&t.type_mouvement==='loyer';}).reduce(function(s,t){return s+parseFloat(t.montant||0);},0);
+    var tx={id:uid(),contrat_id:cid,locataire_id:c?c.locataire_id:null,date_transaction:document.getElementById('mp-d').value,mois_concerne:mois1,montant:montant,type_mouvement:'loyer',statut_paiement:(deja1+montant)>=du?'ok':'partiel',methode:document.getElementById('mp-me').value,commentaire:document.getElementById('mp-co').value.trim()};
     DB.transactions.unshift(tx);
-    curMois=tx.mois_concerne;
-    save();closeModal();renderAll();toast('✓ Paiement enregistré');
+    // Split payment on second month
+    var mois2=document.getElementById('mp-m2').value.trim();
+    var montant2=parseFloat(document.getElementById('mp-r2').value);
+    if(mois2&&montant2){
+      var deja2=DB.transactions.filter(function(t){return t.contrat_id===cid&&t.mois_concerne===mois2&&t.type_mouvement==='loyer';}).reduce(function(s,t){return s+parseFloat(t.montant||0);},0);
+      var tx2={id:uid(),contrat_id:cid,locataire_id:c?c.locataire_id:null,date_transaction:document.getElementById('mp-d').value,mois_concerne:mois2,montant:montant2,type_mouvement:'loyer',statut_paiement:(deja2+montant2)>=du?'ok':'partiel',methode:document.getElementById('mp-me').value,commentaire:document.getElementById('mp-co').value.trim()};
+      DB.transactions.unshift(tx2);
+    }
+    curMois=mois1;
+    save();closeModal();renderAll();toast('✓ Paiement enregistré'+(mois2&&montant2?' (ventilé sur 2 mois)':''));
   };
 }
 
@@ -886,6 +934,7 @@ document.addEventListener('click',function(e){
   if(e.target.id==='btn-add-pay'){mPaiement();return;}
   if(e.target.id==='btn-add-tpl'){mTemplate(null);return;}
   var ofc=e.target.closest('[data-ofc]');if(ofc){openFicheClient(ofc.dataset.ofc);return;}
+  var qpd=e.target.closest('[data-qpd]');if(qpd){mQuickPayDash(qpd.dataset.qpd,parseFloat(qpd.dataset.du||0));return;}
   var elot=e.target.closest('[data-elot]');if(elot){mLot(elot.dataset.elot);return;}
   var dlot=e.target.closest('[data-dlot]');if(dlot){
     var lot=DB.lots.find(function(x){return x.id===dlot.dataset.dlot;});
