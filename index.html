@@ -308,16 +308,33 @@ function updateSub(){
 }
 
 // ── EXPORT / IMPORT ───────────────────────────────────
-document.getElementById('btn-export').onclick=function(){
+document.getElementById('btn-export').onclick=async function(){
   var data=JSON.stringify(DB,null,2);
+  var d=new Date().toISOString().slice(0,10);
+  var fileName='mes-garages-'+d+'.json';
   var blob=new Blob([data],{type:'application/json'});
+  // Use Web Share API if available (Android Chrome, iOS Safari)
+  if(navigator.share && navigator.canShare && navigator.canShare({files:[new File([blob],fileName,{type:'application/json'})]})){
+    try{
+      await navigator.share({
+        title:'Mes Garages — Sauvegarde',
+        text:'Sauvegarde du '+d,
+        files:[new File([blob],fileName,{type:'application/json'})]
+      });
+      toast('✓ Partagé');
+      return;
+    }catch(e){
+      if(e.name==='AbortError')return; // user cancelled
+      // fallback to download
+    }
+  }
+  // Fallback: classic download
   var url=URL.createObjectURL(blob);
   var a=document.createElement('a');
-  var d=new Date().toISOString().slice(0,10);
-  a.href=url;a.download='mes-garages-'+d+'.json';
+  a.href=url;a.download=fileName;
   document.body.appendChild(a);a.click();document.body.removeChild(a);
   URL.revokeObjectURL(url);
-  toast('✓ Sauvegarde exportée');
+  toast('✓ Sauvegarde téléchargée');
 };
 
 document.getElementById('btn-import').onclick=function(){
