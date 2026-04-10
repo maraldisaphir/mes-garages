@@ -373,28 +373,106 @@ function openFicheClient(locId){
 window.openFicheClient=openFicheClient;
 
 function mQuickPayDash(contratId,loyer_du){
+  // Reuse full mPaiement modal but pre-select the contrat
   var c=DB.contrats.find(function(x){return x.id===contratId;});
   var l=c?getLoc(c.locataire_id):{nom:'?'};
+  var du=parseFloat(loyer_du||0);
+
+  // Build contrat options - all active contrats, target one pre-selected
+  var cOpts=DB.contrats.filter(function(x){return x.est_actif;}).map(function(x){
+    var lx=getLoc(x.locataire_id);
+    return'<option value="'+x.id+'"'+(x.id===contratId?' selected':'')+'>'+esc(lx.prenom?lx.prenom+' ':'')+esc(lx.nom)+' — '+esc(gNamesForContrat(x))+' ('+x.loyer_mensuel+'€)</option>';
+  }).join('');
+
+  // Current month payments
   var txCur=DB.transactions.filter(function(t){return t.contrat_id===contratId&&t.mois_concerne===curMois&&t.type_mouvement==='loyer';});
   var recu=txCur.reduce(function(s,t){return s+parseFloat(t.montant||0);},0);
-  var reste=Math.max(0,loyer_du-recu);
-  showModal('<div class="mhandle"></div><div class="mh3">💳 '+esc(l.nom)+' — '+fmtM(curMois)+' <button class="mclose" id="mcl">×</button></div>'+
-    '<div style="font-size:12px;color:var(--text2);margin-bottom:10px">Loyer : '+loyer_du+' € · Déjà reçu : '+Math.round(recu)+' € · Reste : '+Math.round(reste)+' €</div>'+
-    '<div class="pq-row" style="margin-bottom:10px">'+
-      '<input type="number" id="pqd-m" value="'+reste+'" style="width:110px;flex:none" placeholder="Montant €">'+
-      '<select id="pqd-me" style="width:120px;flex:none"><option value="virement">Virement</option><option value="especes">Espèces</option><option value="cheque">Chèque</option></select>'+
+  var reste=Math.max(0,du-recu);
+
+  showModal(
+    '<div class="mhandle"></div>'+
+    '<div class="mh3">💳 Paiement <button class="mclose" id="mcl">×</button></div>'+
+    '<div class="field"><label>Contrat</label><select id="mp-c" onchange="refreshPayInfo()">'+cOpts+'</select></div>'+
+    '<div id="pay-info" style="font-size:12px;color:var(--text2);background:var(--bg3);border-radius:var(--rs);padding:8px 10px;margin-bottom:10px"></div>'+
+    '<div class="f2">'+
+      '<div class="field"><label>Mois concerné</label>'+
+        '<select id="mp-m" onchange="refreshPayInfo()">'+buildMoisOpts(curMois)+'</select>'+
+      '</div>'+
+      '<div class="field"><label>Montant reçu (€)</label><input id="mp-r" type="number" step="0.01" value="'+reste+'"></div>'+
     '</div>'+
-    '<button class="btn btnp" style="width:100%" id="pqd-sv">✓ Enregistrer</button>');
+    '<div class="f2">'+
+      '<div class="field"><label>Méthode</label><select id="mp-me"><option value="virement">Virement</option><option value="especes">Espèces</option><option value="cheque">Chèque</option></select></div>'+
+      '<div class="field"><label>Date</label><input id="mp-d" type="date" value="'+new Date().toISOString().slice(0,10)+'"></div>'+
+    '</div>'+
+    '<div style="background:var(--bg4);border-radius:var(--rs);padding:10px 12px;margin-bottom:10px;font-size:12px;color:var(--text2)">'+
+      '💡 <b style="color:var(--text)">Ventiler sur un 2ème mois</b> (optionnel)<br>'+
+      '<span style="font-size:11px;color:var(--text2)">Le montant M2 sera déduit du total → M1 reçoit le reste</span><br>'+
+      '<div style="display:flex;gap:7px;margin-top:7px;flex-wrap:wrap">'+
+        '<select id="mp-m2" style="font-size:12px;padding:6px 8px;border-radius:var(--rs);border:1px solid var(--border2);background:var(--bg3);color:var(--text)">'+buildMoisOpts('')+'</select>'+
+        '<input type="number" id="mp-r2" placeholder="Montant €" step="0.01" style="font-size:12px;padding:6px 8px;border-radius:var(--rs);border:1px solid var(--border2);background:var(--bg3);color:var(--text);width:100px">'+
+      '</div>'+
+    '</div>'+
+    '<div class="field"><label>Commentaire</label><textarea id="mp-co"></textarea></div>'+
+    '<button class="btn btnp" style="width:100%;margin-top:6px" id="mp-sv">Enregistrer</button>'
+  );
+
   document.getElementById('mcl').onclick=closeModal;
-  document.getElementById('pqd-sv').onclick=function(){
-    var montant=parseFloat(document.getElementById('pqd-m').value);
-    if(!montant){toast('Montant requis');return;}
-    var total=recu+montant;
-    var tx={id:uid(),contrat_id:contratId,locataire_id:c?c.locataire_id:null,date_transaction:new Date().toISOString().slice(0,10),mois_concerne:curMois,montant:montant,type_mouvement:'loyer',statut_paiement:total>=loyer_du?'ok':'partiel',methode:document.getElementById('pqd-me').value,commentaire:''};
+  refreshPayInfo();
+
+  document.getElementById('mp-sv').onclick=function(){
+    var cid=document.getElementById('mp-c').value;if(!cid){toast('Contrat requis');return;}
+    var montant=parseFloat(document.getElementById('mp-r').value);if(!montant){toast('Montant requis');return;}
+    var cx=DB.contrats.find(function(x){return x.id===cid;});
+    var dux=cx?parseFloat(cx.loyer_mensuel||0):0;
+    var mois1=document.getElementById('mp-m').value;
+    var mois2=document.getElementById('mp-m2').value;
+    var montant2=parseFloat(document.getElementById('mp-r2').value)||0;
+    var montant1=mois2&&montant2?montant-montant2:montant;
+    if(mois2&&montant2&&montant2>=montant){toast('Le montant M2 doit être inférieur au total');return;}
+    var deja1=DB.transactions.filter(function(t){return t.contrat_id===cid&&t.mois_concerne===mois1&&t.type_mouvement==='loyer';}).reduce(function(s,t){return s+parseFloat(t.montant||0);},0);
+    var tx={id:uid(),contrat_id:cid,locataire_id:cx?cx.locataire_id:null,
+      date_transaction:document.getElementById('mp-d').value,
+      mois_concerne:mois1,montant:montant1,type_mouvement:'loyer',
+      statut_paiement:(deja1+montant1)>=dux?'ok':'partiel',
+      methode:document.getElementById('mp-me').value,
+      commentaire:document.getElementById('mp-co').value.trim()+(mois2&&montant2?' [virement '+montant+'€ ventilé]':'')};
     DB.transactions.unshift(tx);
-    save();closeModal();rContrats();rPaiements();rHeat();toast('✓ '+montant+' € enregistré');
+    if(mois2&&montant2){
+      var deja2=DB.transactions.filter(function(t){return t.contrat_id===cid&&t.mois_concerne===mois2&&t.type_mouvement==='loyer';}).reduce(function(s,t){return s+parseFloat(t.montant||0);},0);
+      var tx2={id:uid(),contrat_id:cid,locataire_id:cx?cx.locataire_id:null,
+        date_transaction:document.getElementById('mp-d').value,
+        mois_concerne:mois2,montant:montant2,type_mouvement:'loyer',
+        statut_paiement:(deja2+montant2)>=dux?'ok':'partiel',
+        methode:document.getElementById('mp-me').value,
+        commentaire:'[virement '+montant+'€ ventilé depuis '+fmtM(mois1)+']'};
+      DB.transactions.unshift(tx2);
+    }
+    curMois=mois1;
+    save();closeModal();renderAll();toast('✓ '+montant+'€ enregistré'+(mois2&&montant2?' — '+montant1+'€ sur '+fmtM(mois1)+' + '+montant2+'€ sur '+fmtM(mois2):''));
   };
 }
+
+function refreshPayInfo(){
+  var cid=document.getElementById('mp-c');if(!cid)return;
+  var cx=DB.contrats.find(function(x){return x.id===cid.value;});
+  var mEl=document.getElementById('mp-m');
+  var mois=mEl?mEl.value:curMois;
+  if(!cx)return;
+  var du=parseFloat(cx.loyer_mensuel||0);
+  var txM=DB.transactions.filter(function(t){return t.contrat_id===cx.id&&t.mois_concerne===mois&&t.type_mouvement==='loyer';});
+  var recu=txM.reduce(function(s,t){return s+parseFloat(t.montant||0);},0);
+  var reste=Math.max(0,du-recu);
+  var el=document.getElementById('pay-info');
+  if(el){
+    var st=recu===0?'Impayé':recu>=du?'✓ Soldé':'Partiel';
+    var col=recu===0?'var(--red)':recu>=du?'var(--green)':'var(--amber)';
+    el.innerHTML='Loyer : <b>'+du+'€</b> · Déjà reçu : <b>'+Math.round(recu)+'€</b> · Reste : <b style="color:'+col+'">'+Math.round(reste)+'€</b> — <b style="color:'+col+'">'+st+'</b>';
+    var rEl=document.getElementById('mp-r');
+    if(rEl&&!rEl.dataset.touched)rEl.value=reste||du;
+  }
+}
+window.refreshPayInfo=refreshPayInfo;
+
 
 function renderAll(){
   rDashboard();rLotFilter();rLots();rGarages();rLocataires();
@@ -816,13 +894,14 @@ function rPaiements(){
   document.getElementById('list-paiements').innerHTML=rows.join('')||'<div class="empty"><div class="ei">💳</div><p>Aucun paiement ce mois</p></div>';
 }
 
-function buildMoisOpts(){
+function buildMoisOpts(selected){
   var opts='<option value="">— Aucun —</option>';
   var now=new Date();
   for(var i=-6;i<=3;i++){
     var d=new Date(now.getFullYear(),now.getMonth()+i,1);
     var ym=d.toISOString().slice(0,7);
-    opts+='<option value="'+ym+'">'+fmtM(ym)+'</option>';
+    var sel=(selected&&ym===selected)?' selected':'';
+    opts+='<option value="'+ym+'"'+sel+'>'+fmtM(ym)+'</option>';
   }
   return opts;
 }
@@ -833,9 +912,10 @@ function mPaiement(){
     return'<option value="'+c.id+'">'+(l.prenom?esc(l.prenom)+' ':'')+esc(l.nom)+' — '+esc(gNamesForContrat(c))+' ('+c.loyer_mensuel+'€)</option>';
   }).join('');
   showModal('<div class="mhandle"></div><div class="mh3">💳 Saisir un paiement <button class="mclose" id="mcl">×</button></div>'+
-    '<div class="field"><label>Contrat</label><select id="mp-c"><option value="">— Choisir —</option>'+cOpts+'</select></div>'+
-    '<div class="f2"><div class="field"><label>Mois</label><input id="mp-m" type="month" value="'+curMois+'"></div>'+
-    '<div class="field"><label>Montant reçu (€)</label><input id="mp-r" type="number" step="0.01" placeholder="130"></div></div>'+
+    '<div class="field"><label>Contrat</label><select id="mp-c" onchange="refreshPayInfo()"><option value="">— Choisir —</option>'+cOpts+'</select></div>'+
+    '<div id="pay-info" style="font-size:12px;color:var(--text2);background:var(--bg3);border-radius:var(--rs);padding:8px 10px;margin-bottom:10px"></div>'+
+    '<div class="f2"><div class="field"><label>Mois concerné</label><select id="mp-m" onchange="refreshPayInfo()">'+buildMoisOpts(curMois)+'</select></div>'+
+    '<div class="field"><label>Montant reçu (€)</label><input id="mp-r" type="number" step="0.01" placeholder="130" oninput="this.dataset.touched=1"></div></div>'+
     '<div class="f2"><div class="field"><label>Méthode</label><select id="mp-me"><option value="virement">Virement</option><option value="especes">Espèces</option><option value="cheque">Chèque</option></select></div>'+
     '<div class="field"><label>Date</label><input id="mp-d" type="date" value="'+new Date().toISOString().slice(0,10)+'"></div></div>'+
     '<div class="field"><label>Commentaire</label><textarea id="mp-co"></textarea></div>'+
