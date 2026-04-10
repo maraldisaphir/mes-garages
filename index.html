@@ -240,6 +240,10 @@ button,input,select,textarea{font-family:inherit;}
       <code style="background:var(--bg3);padding:1px 5px;border-radius:4px;color:var(--accent)">{garages}</code>
       <code style="background:var(--bg3);padding:1px 5px;border-radius:4px;color:var(--accent)">{lot}</code>
       <code style="background:var(--bg3);padding:1px 5px;border-radius:4px;color:var(--accent)">{montant_recu}</code>
+      <code style="background:var(--bg3);padding:1px 5px;border-radius:4px;color:var(--accent)">{adresse}</code>
+      <code style="background:var(--bg3);padding:1px 5px;border-radius:4px;color:var(--accent)">{telephone}</code>
+      <code style="background:var(--bg3);padding:1px 5px;border-radius:4px;color:var(--accent)">{email}</code>
+      <code style="background:var(--bg3);padding:1px 5px;border-radius:4px;color:var(--accent)">{date_naissance}</code>
     </div>
   </div>
 
@@ -738,11 +742,14 @@ function rLocataires(){
       '<div style="display:flex;align-items:center;gap:10px;margin-bottom:10px">'+
         '<div class="av av'+i%5+'">'+((l.prenom||'?')[0]+(l.nom||'?')[0]).toUpperCase()+'</div>'+
         '<div style="flex:1"><div style="font-size:15px;font-weight:600">'+esc(l.prenom||'')+' '+esc(l.nom)+'</div>'+
-        '<div style="font-size:12px;color:var(--text2)">'+(cs.length?cs.length+' contrat'+(cs.length>1?'s actifs':' actif'):'Aucun contrat actif')+(l.profession?' · '+esc(l.profession):'')+'</div></div>'+
+        '<div style="font-size:12px;color:var(--text2)">'+(cs.length?cs.length+' contrat'+(cs.length>1?'s actifs':' actif'):'Aucun contrat actif')+(l.profession?' · '+esc(l.profession):'')+'</div>'+
+        (l.adresse?'<div style="font-size:11px;color:var(--text3)">📍 '+esc(l.adresse)+'</div>':'')+
+        '</div>'+
         '<div style="display:flex;gap:4px">'+
           '<button class="btn btns" data-eloc="'+l.id+'">✏️</button>'+
           '<button class="btn btns btnd" data-dloc="'+l.id+'">🗑</button>'+
         '</div></div>'+
+      (l.adresse?'<div class="row"><span>Adresse</span><b>'+esc(l.adresse)+'</b></div>':'')+
       (l.telephone?'<div class="row"><span>Tél</span><b>'+esc(l.telephone)+'</b></div>':'')+
       (l.email?'<div class="row"><span>Email</span><b style="font-size:12px">'+esc(l.email)+'</b></div>':'')+
       (l.notes?'<div class="row"><span>Notes</span><b>'+esc(l.notes)+'</b></div>':'')+
@@ -768,6 +775,7 @@ function mLocataire(lid){
     '<div class="field"><label>Nom</label><input id="lc-n" value="'+(l?esc(l.nom):'')+'" placeholder="Dupont"></div></div>'+
     '<div class="f2"><div class="field"><label>Téléphone</label><input id="lc-t" value="'+(l?esc(l.telephone||''):'')+'" placeholder="0611223344"></div>'+
     '<div class="field"><label>Email</label><input id="lc-e" type="email" value="'+(l?esc(l.email||''):'')+'" placeholder="jean@mail.com"></div></div>'+
+    '<div class="field"><label>Adresse</label><input id="lc-ad" value="'+(l?esc(l.adresse||''):'')+'" placeholder="12 rue des Acacias, Metz"></div>'+
     '<div class="f2"><div class="field"><label>Naissance</label><input id="lc-na" type="date" value="'+(l&&l.date_naissance?l.date_naissance:'')+'"></div>'+
     '<div class="field"><label>Profession</label><input id="lc-pr" value="'+(l?esc(l.profession||''):'')+'" placeholder="Technicien"></div></div>'+
     '<div class="field"><label>Notes</label><textarea id="lc-no">'+(l?esc(l.notes||''):'')+'</textarea></div>'+
@@ -775,7 +783,7 @@ function mLocataire(lid){
   document.getElementById('mcl').onclick=closeModal;
   document.getElementById('lc-sv').onclick=function(){
     var nom=document.getElementById('lc-n').value.trim();if(!nom){toast('Nom requis');return;}
-    var data={prenom:document.getElementById('lc-p').value.trim(),nom:nom,telephone:document.getElementById('lc-t').value.trim(),email:document.getElementById('lc-e').value.trim(),date_naissance:document.getElementById('lc-na').value||null,profession:document.getElementById('lc-pr').value.trim(),notes:document.getElementById('lc-no').value.trim()};
+    var data={prenom:document.getElementById('lc-p').value.trim(),nom:nom,telephone:document.getElementById('lc-t').value.trim(),email:document.getElementById('lc-e').value.trim(),adresse:document.getElementById('lc-ad').value.trim(),date_naissance:document.getElementById('lc-na').value||null,profession:document.getElementById('lc-pr').value.trim(),notes:document.getElementById('lc-no').value.trim()};
     if(l){Object.assign(l,data);}else{data.id=uid();DB.locataires.push(data);}
     save();closeModal();rLocataires();rContratFilter();rHeat();toast('✓ Locataire '+(l?'modifié':'ajouté'));
   };
@@ -1010,7 +1018,12 @@ function buildMsg(tplId,locId){
   var txCur=DB.transactions.filter(function(t){return cs.some(function(c){return c.id===t.contrat_id;})&&t.mois_concerne===curMois&&t.type_mouvement==='loyer';});
   var recu=txCur.reduce(function(s,t){return s+parseFloat(t.montant||0);},0);
   var lotNames=[...new Set(cs.flatMap(function(c){return getGids(c).map(function(gid){var g=getGar(gid);return getLot(g).nom;});}))].join(', ');
-  return tpl.corps.replace(/{prenom}/g,l.prenom||'').replace(/{nom}/g,l.nom||'').replace(/{loyer}/g,loyer).replace(/{mois}/g,fmtM(curMois)).replace(/{garages}/g,gNames).replace(/{lot}/g,lotNames).replace(/{montant_recu}/g,Math.round(recu));
+  return tpl.corps
+    .replace(/{prenom}/g,l.prenom||'').replace(/{nom}/g,l.nom||'')
+    .replace(/{adresse}/g,l.adresse||'').replace(/{telephone}/g,l.telephone||'').replace(/{email}/g,l.email||'')
+    .replace(/{date_naissance}/g,l.date_naissance?fmt(l.date_naissance):'')
+    .replace(/{loyer}/g,loyer).replace(/{mois}/g,fmtM(curMois))
+    .replace(/{garages}/g,gNames).replace(/{lot}/g,lotNames).replace(/{montant_recu}/g,Math.round(recu));
 }
 function previewMsg(locId,tplId){
   var txt=buildMsg(tplId,locId);curMsgText=txt;
