@@ -478,8 +478,8 @@ function rHeat(){
     '<div class="kpi"><div class="kval '+(no>0?'cr':'cg')+'">'+no+'</div><div class="klbl">Impayés</div></div>'+
     '<div class="kpi"><div class="kval '+(taux>=95?'cg':taux>=80?'ca':'cr')+'">'+taux+'%</div><div class="klbl">Recouvrement</div></div>';
   // Table
-  var colSpan=3+cols.length;
-  var th='<tr><th style="min-width:75px;position:sticky;left:0;z-index:3;background:var(--bg3)">Locataire</th><th style="min-width:50px;text-align:right">Loyer</th><th style="min-width:60px">Garage(s)</th>';
+  var colSpan=2+cols.length;
+  var th='<tr><th style="min-width:75px;position:sticky;left:0;z-index:3;background:var(--bg3)">Locataire</th><th style="min-width:32px;text-align:right;font-size:10px;padding:5px 3px">€/m</th>';
   cols.forEach(function(col){var ic=col.y===CUR_Y&&col.m===CUR_M;th+='<th class="mth'+(ic?' cur':'')+'">'+MS[col.m]+(fy.length>1?' '+String(col.y).slice(2):'')+'</th>';});
   document.getElementById('ht-head').innerHTML=th+'</tr>';
   var tb='';
