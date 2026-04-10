@@ -452,8 +452,14 @@ function rHeat(){
     var db=new Date(c.date_debut);
     if(y<db.getFullYear()||(y===db.getFullYear()&&m<db.getMonth()))return'vid';
     if(c.date_fin){var df=new Date(c.date_fin);if(y>df.getFullYear()||(y===df.getFullYear()&&m>df.getMonth()))return'vid';}
-    if(y>CUR_Y||(y===CUR_Y&&m>CUR_M))return'fut';
     var txs=txIdx[c.id+'_'+ym]||[];
+    // Future month: show payment if exists, otherwise 'fut'
+    if(y>CUR_Y||(y===CUR_Y&&m>CUR_M)){
+      if(!txs.length)return'fut';
+      var recuF=txs.reduce(function(s,t){return s+parseFloat(t.montant||0);},0);
+      var duF=parseFloat(c.loyer_mensuel||0);
+      return recuF>=duF?'ok':recuF>0?'part':'fut';
+    }
     if(!txs.length)return'no';
     var recu=txs.reduce(function(s,t){return s+parseFloat(t.montant||0);},0);
     var du=parseFloat(c.loyer_mensuel||0);
@@ -486,7 +492,7 @@ function rHeat(){
   if(!allC.length){tb='<tr><td colspan="'+colSpan+'" style="padding:30px;text-align:center;color:var(--text3)">Aucun contrat — créez-en un dans l\'onglet Contrats</td></tr>';}
   else allC.forEach(function(c){
     var l=getLoc(c.locataire_id);
-    tb+='<tr><td style="position:sticky;left:0;z-index:1;background:var(--bg2);padding:3px 5px;max-width:75px"><div style="font-size:11px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;cursor:pointer;color:var(--accent)" data-ofc="'+c.locataire_id+'">'+esc(l.nom)+'</div></td><td style="padding:4px;text-align:right;font-size:11px;color:var(--text2);white-space:nowrap">'+(c.loyer_mensuel||0)+'</td>';
+    tb+='<tr><td style="position:sticky;left:0;z-index:1;background:var(--bg2);padding:2px 4px;max-width:80px"><div style="display:flex;align-items:center;gap:2px"><span style="font-size:11px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;cursor:pointer;color:var(--accent);flex:1;min-width:0" data-ofc="'+c.locataire_id+'">'+esc(l.nom)+'</span><button style="flex-shrink:0;background:var(--accent2);border:none;border-radius:3px;color:#fff;font-size:11px;font-weight:700;cursor:pointer;padding:0 5px;line-height:1.6;margin-left:2px" data-qpd="'+c.id+'" data-du="'+c.loyer_mensuel+'">+</button></div></td><td style="padding:4px;text-align:right;font-size:11px;color:var(--text2);white-space:nowrap">'+(c.loyer_mensuel||0)+'</td>';
     cols.forEach(function(col){
       var ic=col.y===CUR_Y&&col.m===CUR_M;
       var s=getSt(c,col.y,col.m);
@@ -807,6 +813,17 @@ function rPaiements(){
   document.getElementById('list-paiements').innerHTML=rows.join('')||'<div class="empty"><div class="ei">💳</div><p>Aucun paiement ce mois</p></div>';
 }
 
+function buildMoisOpts(){
+  var opts='<option value="">— Aucun —</option>';
+  var now=new Date();
+  for(var i=-6;i<=3;i++){
+    var d=new Date(now.getFullYear(),now.getMonth()+i,1);
+    var ym=d.toISOString().slice(0,7);
+    opts+='<option value="'+ym+'">'+fmtM(ym)+'</option>';
+  }
+  return opts;
+}
+
 function mPaiement(){
   var cOpts=DB.contrats.filter(function(c){return c.est_actif;}).map(function(c){
     var l=getLoc(c.locataire_id);
@@ -820,10 +837,10 @@ function mPaiement(){
     '<div class="field"><label>Date</label><input id="mp-d" type="date" value="'+new Date().toISOString().slice(0,10)+'"></div></div>'+
     '<div class="field"><label>Commentaire</label><textarea id="mp-co"></textarea></div>'+
     '<div style="background:var(--bg4);border-radius:var(--rs);padding:10px 12px;margin-top:8px;font-size:12px;color:var(--text2)">'+
-    '💡 <b style="color:var(--text)">Ventilation sur 2 mois</b> (optionnel)<br>'+
+    '💡 <b style="color:var(--text)">Ventiler sur un 2ème mois</b> (optionnel)<br><span style="font-size:11px">Ex: virement couvrant à la fois mars et avril</span><br>'+
     '<div style="display:flex;gap:7px;margin-top:7px;flex-wrap:wrap">'+
-    '<input type="number" id="mp-m2" placeholder="Mois 2 (AAAA-MM)" style="font-size:12px;padding:6px 8px;border-radius:var(--rs);border:1px solid var(--border2);background:var(--bg3);color:var(--text);width:130px">'+
-    '<input type="number" id="mp-r2" placeholder="Montant mois 2 (€)" step="0.01" style="font-size:12px;padding:6px 8px;border-radius:var(--rs);border:1px solid var(--border2);background:var(--bg3);color:var(--text);width:140px">'+
+    '<select id="mp-m2" style="font-size:12px;padding:6px 8px;border-radius:var(--rs);border:1px solid var(--border2);background:var(--bg3);color:var(--text)">'+buildMoisOpts()+'</select>'+
+    '<input type="number" id="mp-r2" placeholder="Montant €" step="0.01" style="font-size:12px;padding:6px 8px;border-radius:var(--rs);border:1px solid var(--border2);background:var(--bg3);color:var(--text);width:100px">'+
     '</div></div>'+
     '<button class="btn btnp" style="width:100%;margin-top:10px" id="mp-sv">Enregistrer</button>');
   document.getElementById('mcl').onclick=closeModal;
