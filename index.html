@@ -497,8 +497,11 @@ function rHeat(){
       var ic=col.y===CUR_Y&&col.m===CUR_M;
       var s=getSt(c,col.y,col.m);
       var cls='c-vid',txt='';
-      if(s==='ok'){cls='c-ok';txt=c.loyer_mensuel||'';}
-      else if(s==='part'){cls='c-part';txt='~';}
+      var ymCell=col.y+'-'+(col.m<9?'0'+(col.m+1):(col.m+1));
+      var txCell=txIdx[c.id+'_'+ymCell]||[];
+      var recuCell=txCell.reduce(function(s,t){return s+parseFloat(t.montant||0);},0);
+      if(s==='ok'){cls='c-ok';txt=Math.round(recuCell)||c.loyer_mensuel||'';}
+      else if(s==='part'){cls='c-part';txt=Math.round(recuCell);}
       else if(s==='no'){cls='c-no';txt='!';}
       else if(s==='fut'){cls='c-fut';}
       tb+='<td class="cel'+(ic?' cur':'')+'"><div class="ci '+cls+'">'+txt+'</div></td>';
@@ -837,7 +840,7 @@ function mPaiement(){
     '<div class="field"><label>Date</label><input id="mp-d" type="date" value="'+new Date().toISOString().slice(0,10)+'"></div></div>'+
     '<div class="field"><label>Commentaire</label><textarea id="mp-co"></textarea></div>'+
     '<div style="background:var(--bg4);border-radius:var(--rs);padding:10px 12px;margin-top:8px;font-size:12px;color:var(--text2)">'+
-    '💡 <b style="color:var(--text)">Ventiler sur un 2ème mois</b> (optionnel)<br><span style="font-size:11px">Ex: virement couvrant à la fois mars et avril</span><br>'+
+    '💡 <b style="color:var(--text)">Ventiler sur un 2ème mois</b> (optionnel)<br><span style="font-size:11px;color:var(--text2)">Le montant M2 sera déduit du total → M1 reçoit le reste</span><br>'+
     '<div style="display:flex;gap:7px;margin-top:7px;flex-wrap:wrap">'+
     '<select id="mp-m2" style="font-size:12px;padding:6px 8px;border-radius:var(--rs);border:1px solid var(--border2);background:var(--bg3);color:var(--text)">'+buildMoisOpts()+'</select>'+
     '<input type="number" id="mp-r2" placeholder="Montant €" step="0.01" style="font-size:12px;padding:6px 8px;border-radius:var(--rs);border:1px solid var(--border2);background:var(--bg3);color:var(--text);width:100px">'+
@@ -850,19 +853,22 @@ function mPaiement(){
     var c=DB.contrats.find(function(x){return x.id===cid;});
     var du=c?parseFloat(c.loyer_mensuel||0):0;
     var mois1=document.getElementById('mp-m').value;
+    var mois2=document.getElementById('mp-m2').value;
+    var montant2=parseFloat(document.getElementById('mp-r2').value)||0;
+    // Ventilation: M2 is deducted from total, M1 gets the rest
+    // Ex: virement 100€, 5€ pour M2 -> M1 gets 95€, M2 gets 5€. Total = 100€.
+    var montant1=mois2&&montant2?montant-montant2:montant;
+    if(mois2&&montant2&&montant2>=montant){toast('Le montant M2 doit être inférieur au total');return;}
     var deja1=DB.transactions.filter(function(t){return t.contrat_id===cid&&t.mois_concerne===mois1&&t.type_mouvement==='loyer';}).reduce(function(s,t){return s+parseFloat(t.montant||0);},0);
-    var tx={id:uid(),contrat_id:cid,locataire_id:c?c.locataire_id:null,date_transaction:document.getElementById('mp-d').value,mois_concerne:mois1,montant:montant,type_mouvement:'loyer',statut_paiement:(deja1+montant)>=du?'ok':'partiel',methode:document.getElementById('mp-me').value,commentaire:document.getElementById('mp-co').value.trim()};
+    var tx={id:uid(),contrat_id:cid,locataire_id:c?c.locataire_id:null,date_transaction:document.getElementById('mp-d').value,mois_concerne:mois1,montant:montant1,type_mouvement:'loyer',statut_paiement:(deja1+montant1)>=du?'ok':'partiel',methode:document.getElementById('mp-me').value,commentaire:document.getElementById('mp-co').value.trim()+(mois2&&montant2?' [virement '+montant+'€ ventilé]':'')};
     DB.transactions.unshift(tx);
-    // Split payment on second month
-    var mois2=document.getElementById('mp-m2').value.trim();
-    var montant2=parseFloat(document.getElementById('mp-r2').value);
     if(mois2&&montant2){
       var deja2=DB.transactions.filter(function(t){return t.contrat_id===cid&&t.mois_concerne===mois2&&t.type_mouvement==='loyer';}).reduce(function(s,t){return s+parseFloat(t.montant||0);},0);
-      var tx2={id:uid(),contrat_id:cid,locataire_id:c?c.locataire_id:null,date_transaction:document.getElementById('mp-d').value,mois_concerne:mois2,montant:montant2,type_mouvement:'loyer',statut_paiement:(deja2+montant2)>=du?'ok':'partiel',methode:document.getElementById('mp-me').value,commentaire:document.getElementById('mp-co').value.trim()};
+      var tx2={id:uid(),contrat_id:cid,locataire_id:c?c.locataire_id:null,date_transaction:document.getElementById('mp-d').value,mois_concerne:mois2,montant:montant2,type_mouvement:'loyer',statut_paiement:(deja2+montant2)>=du?'ok':'partiel',methode:document.getElementById('mp-me').value,commentaire:'[virement '+montant+'€ ventilé depuis '+fmtM(mois1)+']'};
       DB.transactions.unshift(tx2);
     }
     curMois=mois1;
-    save();closeModal();renderAll();toast('✓ Paiement enregistré'+(mois2&&montant2?' (ventilé sur 2 mois)':''));
+    save();closeModal();renderAll();toast('✓ '+montant+'€ enregistré'+(mois2&&montant2?' — '+montant1+'€ sur '+fmtM(mois1)+' + '+montant2+'€ sur '+fmtM(mois2):''));
   };
 }
 
