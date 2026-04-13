@@ -98,8 +98,9 @@ button,input,select,textarea{font-family:inherit;}
 .mtabs::-webkit-scrollbar{display:none;}
 .mt{padding:5px 12px;border-radius:20px;border:1px solid var(--border);font-size:12px;cursor:pointer;background:transparent;color:var(--text2);white-space:nowrap;}
 .mt.on{background:var(--bg3);color:var(--text);border-color:var(--border2);}
-.pgrid{display:grid;grid-template-columns:2fr 1fr 1.2fr 1fr;gap:5px;font-size:13px;padding:8px 0;border-top:1px solid var(--border);align-items:start;}
+.pgrid{display:grid;grid-template-columns:2fr 1fr 1.2fr 1fr auto;gap:5px;font-size:13px;padding:8px 0;border-top:1px solid var(--border);align-items:start;}
 .phd{font-size:10px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.05em;border-top:none;padding-top:0;}
+.pgrid-hd{display:grid;grid-template-columns:2fr 1fr 1.2fr 1fr auto;gap:5px;font-size:10px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.05em;padding-bottom:4px;}
 .msg-sec{margin-top:10px;background:var(--bg3);border-radius:var(--rs);padding:10px 12px;border:1px solid var(--border);}
 .msg-btns{display:flex;gap:6px;flex-wrap:wrap;margin-top:6px;}
 .msg-prev{margin-top:8px;background:var(--bg4);border-radius:var(--rs);padding:10px;font-size:13px;color:var(--text);line-height:1.6;border:1px solid var(--border2);white-space:pre-wrap;}
@@ -242,7 +243,7 @@ button,input,select,textarea{font-family:inherit;}
       <select id="fp"><option value="all">Tous statuts</option><option value="ok">Payé</option><option value="partiel">Partiel</option><option value="impaye">Impayé</option></select>
       <button class="btn btnp" id="btn-add-pay">+ Paiement</button>
     </div>
-    <div class="pgrid phd"><span>Contrat / Locataire</span><span>Lots</span><span>Statut</span><span>Date</span></div>
+    <div class="pgrid phd"><span>Contrat / Locataire</span><span>Lots</span><span>Statut</span><span>Date</span><span></span></div>
     <div id="list-paiements"></div>
   </div>
 
@@ -796,6 +797,17 @@ function rHeat(){
     return recu>=du?'ok':recu>0?'part':'no';
   }
   var allC=DB.contrats;
+  // Only show contrats active during displayed years
+  var firstYearMonth=fy[0]+'-01';
+  var lastYearMonth=fy[fy.length-1]+'-12';
+  allC=allC.filter(function(c){
+    // Contrat must start before or during displayed period
+    if(c.date_debut>lastYearMonth+'-31') return false;
+    // Contrat must not end before displayed period starts
+    if(c.date_fin&&c.date_fin<firstYearMonth+'-01') return false;
+    // Must have at least one visible column (not all vid)
+    return cols.some(function(col){return getSt(c,col.y,col.m)!=='vid';});
+  });
   if(dfLot!=='all'){
     var gids=DB.garages.filter(function(g){return g.lot_id===dfLot;}).map(function(g){return g.id;});
     allC=allC.filter(function(c){return getGids(c).some(function(gid){return gids.includes(gid);});});
@@ -1176,15 +1188,116 @@ function rPaiements(){
     var statut=recu===0?'impaye':recu>=du?'ok':'partiel';
     if(fp!=='all'&&statut!==fp)return null;
     var last=txM[0];
-    return'<div class="pgrid">'+
+    return'<div class="pgrid" style="grid-template-columns:2fr 1fr 1.2fr 1fr auto">'+
       '<div><div style="font-size:13px;font-weight:600">'+esc(gNamesForContrat(c))+'</div>'+
       '<div style="font-size:12px;color:var(--text2)">'+esc(l.prenom||'')+' '+esc(l.nom)+'</div></div>'+
       '<span style="font-size:12px;color:var(--text2)">'+esc(lotNamesForContrat(c))+'</span>'+
       '<div><span class="badge '+statut+'">'+(sl[statut]||statut)+'</span>'+
       (statut==='partiel'?'<div style="font-size:11px;color:var(--text2);margin-top:2px">'+Math.round(recu)+'/'+Math.round(du)+' €</div>':'')+
-      '</div><span style="font-size:12px;color:var(--text2)">'+(last?fmt(last.date_transaction):'—')+'</span></div>';
+      '</div>'+
+      '<span style="font-size:12px;color:var(--text2)">'+(last?fmt(last.date_transaction):'—')+'</span>'+
+      '<button class="btn btns" data-epay="'+c.id+'" data-mois="'+curMois+'">✏️</button>'+
+      '</div>';
   }).filter(Boolean);
   document.getElementById('list-paiements').innerHTML=rows.join('')||'<div class="empty"><div class="ei">💳</div><p>Aucun paiement ce mois</p></div>';
+}
+
+function mEditPaiement(contratId, mois){
+  var c=DB.contrats.find(function(x){return x.id===contratId;});
+  var l=c?getLoc(c.locataire_id):{nom:'?'};
+  var du=parseFloat(c?c.loyer_mensuel||0:0);
+  var txs=DB.transactions.filter(function(t){return t.contrat_id===contratId&&t.mois_concerne===mois&&t.type_mouvement==='loyer';});
+  var recu=txs.reduce(function(s,t){return s+parseFloat(t.montant||0);},0);
+
+  // Build list of transactions for this month
+  var txRows=txs.length?txs.map(function(t,i){
+    return'<div style="display:flex;align-items:center;gap:8px;padding:7px 0;border-top:1px solid var(--border)">'+
+      '<div style="flex:1;font-size:13px">'+fmt(t.date_transaction)+' — <b>'+t.montant+'€</b> ('+t.methode+')'+(t.commentaire?' <span style="color:var(--text3);font-size:11px">'+esc(t.commentaire)+'</span>':'')+'</div>'+
+      '<button class="btn btns" data-edittx="'+t.id+'">✏️</button>'+
+      '<button class="btn btns btnd" data-deltx="'+t.id+'">🗑</button>'+
+    '</div>';
+  }).join(''):'<div style="font-size:13px;color:var(--text3);padding:8px 0">Aucun paiement ce mois</div>';
+
+  showModal(
+    '<div class="mhandle"></div>'+
+    '<div class="mh3">💳 '+esc(l.nom)+' — '+fmtM(mois)+' <button class="mclose" id="mcl">×</button></div>'+
+    '<div style="font-size:12px;color:var(--text2);background:var(--bg3);border-radius:var(--rs);padding:8px 10px;margin-bottom:12px">'+
+      'Loyer : <b>'+du+'€</b> · Reçu : <b>'+Math.round(recu)+'€</b> · Reste : <b style="color:'+(recu>=du?'var(--green)':'var(--red)')+'">'+Math.max(0,du-recu)+'€</b>'+
+    '</div>'+
+    '<div id="tx-list">'+txRows+'</div>'+
+    '<div class="mh3" style="margin-top:14px;font-size:13px">Ajouter un paiement</div>'+
+    '<div class="f2">'+
+      '<div class="field"><label>Montant (€)</label><input id="ep-mt" type="number" step="0.01" value="'+Math.max(0,du-recu)||du+'"></div>'+
+      '<div class="field"><label>Date</label><input id="ep-dt" type="date" value="'+new Date().toISOString().slice(0,10)+'"></div>'+
+    '</div>'+
+    '<div class="f2">'+
+      '<div class="field"><label>Méthode</label><select id="ep-me"><option value="virement">Virement</option><option value="especes">Espèces</option><option value="cheque">Chèque</option></select></div>'+
+      '<div class="field"><label>Commentaire</label><input id="ep-co" placeholder="optionnel"></div>'+
+    '</div>'+
+    '<button class="btn btnp" style="width:100%;margin-top:6px" id="ep-sv">+ Ajouter ce paiement</button>'
+  );
+  document.getElementById('mcl').onclick=closeModal;
+
+  // Delete transaction
+  document.getElementById('tx-list').addEventListener('click',function(e){
+    var deltx=e.target.closest('[data-deltx]');
+    if(deltx){
+      mConfirm('Supprimer ce paiement ?',function(){
+        DB.transactions=DB.transactions.filter(function(t){return t.id!==deltx.dataset.deltx;});
+        save();closeModal();rPaiements();rContrats();rHeat();toast('Paiement supprimé');
+      });return;
+    }
+    var edittx=e.target.closest('[data-edittx]');
+    if(edittx){
+      var tx=DB.transactions.find(function(t){return t.id===edittx.dataset.edittx;});
+      if(!tx)return;
+      showModal(
+        '<div class="mhandle"></div>'+
+        '<div class="mh3">✏️ Modifier le paiement <button class="mclose" id="mcl2">×</button></div>'+
+        '<div class="f2">'+
+          '<div class="field"><label>Montant (€)</label><input id="em-mt" type="number" step="0.01" value="'+tx.montant+'"></div>'+
+          '<div class="field"><label>Date</label><input id="em-dt" type="date" value="'+tx.date_transaction+'"></div>'+
+        '</div>'+
+        '<div class="f2">'+
+          '<div class="field"><label>Méthode</label><select id="em-me">'+
+            ['virement','especes','cheque'].map(function(m){return'<option value="'+m+'"'+(tx.methode===m?' selected':'')+'>'+{virement:'Virement',especes:'Espèces',cheque:'Chèque'}[m]+'</option>';}).join('')+
+          '</select></div>'+
+          '<div class="field"><label>Commentaire</label><input id="em-co" value="'+esc(tx.commentaire||'')+'"></div>'+
+        '</div>'+
+        '<button class="btn btnp" style="width:100%;margin-top:6px" id="em-sv">Enregistrer</button>'
+      );
+      document.getElementById('mcl2').onclick=function(){mEditPaiement(contratId,mois);};
+      document.getElementById('em-sv').onclick=function(){
+        var mt=parseFloat(document.getElementById('em-mt').value);
+        if(!mt){toast('Montant requis');return;}
+        tx.montant=mt;
+        tx.date_transaction=document.getElementById('em-dt').value;
+        tx.methode=document.getElementById('em-me').value;
+        tx.commentaire=document.getElementById('em-co').value.trim();
+        // Recalculate status
+        var allTxMois=DB.transactions.filter(function(t){return t.contrat_id===contratId&&t.mois_concerne===mois&&t.type_mouvement==='loyer';});
+        var totalRecu=allTxMois.reduce(function(s,t){return s+parseFloat(t.montant||0);},0);
+        tx.statut_paiement=totalRecu>=du?'ok':'partiel';
+        save();mEditPaiement(contratId,mois);rPaiements();rContrats();rHeat();toast('✓ Paiement modifié');
+      };
+      return;
+    }
+  });
+
+  document.getElementById('ep-sv').onclick=function(){
+    var mt=parseFloat(document.getElementById('ep-mt').value);
+    if(!mt){toast('Montant requis');return;}
+    var allTxMois=DB.transactions.filter(function(t){return t.contrat_id===contratId&&t.mois_concerne===mois&&t.type_mouvement==='loyer';});
+    var totalRecu=allTxMois.reduce(function(s,t){return s+parseFloat(t.montant||0);},0)+mt;
+    var tx={id:uid(),contrat_id:contratId,locataire_id:c?c.locataire_id:null,
+      date_transaction:document.getElementById('ep-dt').value,
+      mois_concerne:mois,montant:mt,type_mouvement:'loyer',
+      statut_paiement:totalRecu>=du?'ok':'partiel',
+      methode:document.getElementById('ep-me').value,
+      commentaire:document.getElementById('ep-co').value.trim()};
+    DB.transactions.unshift(tx);
+    save();mEditPaiement(contratId,mois);rPaiements();rContrats();rHeat();toast('✓ Paiement ajouté');
+  };
 }
 
 function buildMoisOpts(selected){
@@ -1366,6 +1479,7 @@ document.addEventListener('click',function(e){
       DB.contrats=DB.contrats.filter(function(x){return x.id!==dcon.dataset.dcon;});
       save();closeModal();rContrats();rGarages();rHeat();toast('Contrat supprimé');
     });return;}
+  var epay=e.target.closest('[data-epay]');if(epay){mEditPaiement(epay.dataset.epay,epay.dataset.mois);return;}
   var etpl=e.target.closest('[data-etpl]');if(etpl){mTemplate(etpl.dataset.etpl);return;}
   if(e.target.id==='btn-add-charge'){mCharge(null);return;}
   var ech=e.target.closest('[data-echarge]');if(ech){mCharge(ech.dataset.echarge);return;}
