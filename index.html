@@ -183,6 +183,8 @@ button,input,select,textarea{font-family:inherit;}
       <button class="btn btnp" id="stb-lots" onclick="showRef('lots')">🗂 Lots</button>
       <button class="btn" id="stb-garages" onclick="showRef('garages')">🏠 Garages</button>
       <button class="btn" id="stb-locataires" onclick="showRef('locataires')">👤 Locataires</button>
+      <button class="btn" id="stb-contrats" onclick="showRef('contrats')">📋 Contrats</button>
+      <button class="btn" id="stb-messages" onclick="showRef('messages')">💬 Messages</button>
     </div>
     <div id="ref-lots">
       <div class="tb"><button class="btn btnp" id="btn-add-lot">+ Nouveau lot</button></div>
@@ -202,20 +204,39 @@ button,input,select,textarea{font-family:inherit;}
       </div>
       <div id="list-locataires"></div>
     </div>
-  </div>
-
-  <!-- CONTRATS -->
-  <div id="s2" class="sec">
+    <div id="ref-contrats" style="display:none">
     <div class="tb">
       <select id="fc-st"><option value="all">Tous</option><option value="actif">Actifs</option><option value="cloture">Clôturés</option></select>
       <select id="fc-loc"><option value="all">Tous locataires</option></select>
       <button class="btn btnp" id="btn-add-contrat">+ Nouveau contrat</button>
     </div>
     <div id="list-contrats"></div>
+    </div>
+  <!-- PAIEMENTS -->
+
+    <div id="ref-messages" style="display:none">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+        <div style="font-size:15px;font-weight:600">Templates de messages</div>
+        <button class="btn btnp btns" id="btn-add-tpl">+ Template</button>
+      </div>
+      <div id="list-tpl"></div>
+      <div style="margin-top:14px;font-size:12px;color:var(--text3);line-height:2">
+        Variables : <code style="background:var(--bg3);padding:1px 5px;border-radius:4px;color:var(--accent)">{prenom}</code>
+        <code style="background:var(--bg3);padding:1px 5px;border-radius:4px;color:var(--accent)">{nom}</code>
+        <code style="background:var(--bg3);padding:1px 5px;border-radius:4px;color:var(--accent)">{loyer}</code>
+        <code style="background:var(--bg3);padding:1px 5px;border-radius:4px;color:var(--accent)">{mois}</code>
+        <code style="background:var(--bg3);padding:1px 5px;border-radius:4px;color:var(--accent)">{garages}</code>
+        <code style="background:var(--bg3);padding:1px 5px;border-radius:4px;color:var(--accent)">{montant_recu}</code>
+        <code style="background:var(--bg3);padding:1px 5px;border-radius:4px;color:var(--accent)">{adresse}</code>
+        <code style="background:var(--bg3);padding:1px 5px;border-radius:4px;color:var(--accent)">{telephone}</code>
+        <code style="background:var(--bg3);padding:1px 5px;border-radius:4px;color:var(--accent)">{email}</code>
+        <code style="background:var(--bg3);padding:1px 5px;border-radius:4px;color:var(--accent)">{date_naissance}</code>
+      </div>
+    </div>
   </div>
 
-  <!-- PAIEMENTS -->
-  <div id="s3" class="sec">
+  <!-- CONTRATS -->
+  <div id="s2" class="sec">
     <div class="mtabs" id="mtabs"></div>
     <div class="tb">
       <select id="fp"><option value="all">Tous statuts</option><option value="ok">Payé</option><option value="partiel">Partiel</option><option value="impaye">Impayé</option></select>
@@ -226,25 +247,20 @@ button,input,select,textarea{font-family:inherit;}
   </div>
 
   <!-- MESSAGES -->
-  <div id="s4" class="sec">
-    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
-      <div style="font-size:15px;font-weight:600">Templates de messages</div>
-      <button class="btn btnp btns" id="btn-add-tpl">+ Template</button>
+  <div id="s3" class="sec">
+    <div class="tb">
+      <select id="fc-lot-charge"><option value="all">Tous les lots</option></select>
+      <select id="fc-an-charge"></select>
+      <button class="btn btnp" id="btn-add-charge">+ Charge</button>
     </div>
-    <div id="list-tpl"></div>
-    <div style="margin-top:14px;font-size:12px;color:var(--text3);line-height:2">
-      Variables : <code style="background:var(--bg3);padding:1px 5px;border-radius:4px;color:var(--accent)">{prenom}</code>
-      <code style="background:var(--bg3);padding:1px 5px;border-radius:4px;color:var(--accent)">{nom}</code>
-      <code style="background:var(--bg3);padding:1px 5px;border-radius:4px;color:var(--accent)">{loyer}</code>
-      <code style="background:var(--bg3);padding:1px 5px;border-radius:4px;color:var(--accent)">{mois}</code>
-      <code style="background:var(--bg3);padding:1px 5px;border-radius:4px;color:var(--accent)">{garages}</code>
-      <code style="background:var(--bg3);padding:1px 5px;border-radius:4px;color:var(--accent)">{lot}</code>
-      <code style="background:var(--bg3);padding:1px 5px;border-radius:4px;color:var(--accent)">{montant_recu}</code>
-      <code style="background:var(--bg3);padding:1px 5px;border-radius:4px;color:var(--accent)">{adresse}</code>
-      <code style="background:var(--bg3);padding:1px 5px;border-radius:4px;color:var(--accent)">{telephone}</code>
-      <code style="background:var(--bg3);padding:1px 5px;border-radius:4px;color:var(--accent)">{email}</code>
-      <code style="background:var(--bg3);padding:1px 5px;border-radius:4px;color:var(--accent)">{date_naissance}</code>
+    <div id="list-charges"></div>
+  </div>
+    <div id="s4" class="sec">
+    <div class="dash-filters" style="margin-bottom:12px">
+      <select id="bil-an"></select>
+      <select id="bil-lot"><option value="all">Tous les lots</option></select>
     </div>
+    <div id="bilan-content"></div>
   </div>
 
 </div>
@@ -252,15 +268,16 @@ button,input,select,textarea{font-family:inherit;}
 <div class="bnav">
   <button class="bnbtn on" data-bnav="0"><span class="bnico">📊</span>Dashboard</button>
   <button class="bnbtn" data-bnav="1"><span class="bnico">🗂</span>Références</button>
-  <button class="bnbtn" data-bnav="2"><span class="bnico">📋</span>Contrats</button>
-  <button class="bnbtn" data-bnav="3"><span class="bnico">💳</span>Paiements</button>
-  <button class="bnbtn" data-bnav="4"><span class="bnico">💬</span>Messages</button>
+  <button class="bnbtn" data-bnav="2"><span class="bnico">💳</span>Paiements</button>
+  <button class="bnbtn" data-bnav="3"><span class="bnico">💸</span>Charges</button>
+  <button class="bnbtn" data-bnav="4"><span class="bnico">💰</span>Bilan</button>
 </div>
 
 <div id="overlay" style="display:none" class="overlay"><div class="modal" id="mc"></div></div>
 <div class="toast" id="toast"></div>
 
 <script>
+
 (function(){
 'use strict';
 
@@ -277,7 +294,7 @@ var curMois=new Date().toISOString().slice(0,7);
 
 // ── DONNÉES ───────────────────────────────────────────
 var DB={
-  lots:[],garages:[],locataires:[],contrats:[],transactions:[],templates:[]
+  lots:[],garages:[],locataires:[],contrats:[],transactions:[],templates:[],charges:[]
 };
 
 var DEF_TEMPLATES=[
@@ -288,7 +305,7 @@ var DEF_TEMPLATES=[
 function load(){
   try{
     var raw=localStorage.getItem('mes_garages_v2');
-    if(raw){DB=JSON.parse(raw);}
+    if(raw){DB=JSON.parse(raw);if(!DB.charges)DB.charges=[];}
     else{DB.templates=JSON.parse(JSON.stringify(DEF_TEMPLATES));save();}
     if(!DB.templates||!DB.templates.length){DB.templates=JSON.parse(JSON.stringify(DEF_TEMPLATES));save();}
   }catch(e){DB={lots:[],garages:[],locataires:[],contrats:[],transactions:[],templates:JSON.parse(JSON.stringify(DEF_TEMPLATES))};save();}
@@ -362,11 +379,19 @@ function gotoTab(n){
 }
 
 window.showRef=function(which){
-  ['lots','garages','locataires'].forEach(function(r){
+  ['lots','garages','locataires','contrats','messages'].forEach(function(r){
     document.getElementById('ref-'+r).style.display=r===which?'block':'none';
     var btn=document.getElementById('stb-'+r);
     if(btn)btn.className='btn'+(r===which?' btnp':'');
   });
+  if(which==='contrats'){
+    rContratFilter();rContrats();
+    var fcst=document.getElementById('fc-st');
+    var fcloc=document.getElementById('fc-loc');
+    if(fcst&&!fcst.dataset.bound){fcst.addEventListener('change',rContrats);fcst.dataset.bound='1';}
+    if(fcloc&&!fcloc.dataset.bound){fcloc.addEventListener('change',rContrats);fcloc.dataset.bound='1';}
+  }
+  if(which==='messages')rTemplates();
 }
 
 function openFicheClient(locId){
@@ -487,9 +512,225 @@ function refreshPayInfo(){
 window.refreshPayInfo=refreshPayInfo;
 
 
+
+// ═══════════════════════════════════════
+// ── CHARGES ────────────────────────────
+// ═══════════════════════════════════════
+var CATS=[
+  {id:'taxe_fonciere',label:'Taxe foncière'},
+  {id:'assurance',label:'Assurance PNO'},
+  {id:'interets',label:'Intérêts emprunt'},
+  {id:'travaux',label:'Travaux / Réparations'},
+  {id:'frais_gestion',label:'Frais de gestion'},
+  {id:'frais_divers',label:'Frais divers'},
+];
+
+function rChargeFilters(){
+  var years=[];
+  var now=new Date().getFullYear();
+  for(var y=now-3;y<=now+1;y++)years.push(y);
+  ['fc-an-charge','bil-an'].forEach(function(id){
+    var el=document.getElementById(id);
+    if(!el)return;
+    var cur=el.value||String(now);
+    el.innerHTML=years.map(function(y){return'<option value="'+y+'"'+(String(y)===cur?' selected':'')+'>'+y+'</option>';}).join('');
+  });
+  var fcl=document.getElementById('fc-lot-charge');
+  var bilLot=document.getElementById('bil-lot');
+  var lotOpts='<option value="all">Tous les lots</option>'+DB.lots.map(function(l){return'<option value="'+l.id+'">'+esc(l.nom)+'</option>';}).join('');
+  if(fcl)fcl.innerHTML=lotOpts;
+  if(bilLot)bilLot.innerHTML=lotOpts;
+}
+
+function rCharges(){
+  var fLot=document.getElementById('fc-lot-charge');
+  var fAn=document.getElementById('fc-an-charge');
+  var lotId=fLot?fLot.value:'all';
+  var year=fAn?fAn.value:String(new Date().getFullYear());
+  var list=DB.charges.filter(function(c){
+    if(c.annee!==year)return false;
+    if(lotId!=='all'&&c.lot_id!==lotId)return false;
+    return true;
+  });
+  var h='';
+  if(!list.length){h='<div class="empty"><div class="ei">💸</div><p>Aucune charge pour cette période</p></div>';}
+  else{
+    var byLot={};
+    list.forEach(function(c){
+      if(!byLot[c.lot_id])byLot[c.lot_id]=[];
+      byLot[c.lot_id].push(c);
+    });
+    Object.keys(byLot).forEach(function(lid){
+      var lot=DB.lots.find(function(l){return l.id===lid;})||{nom:'Sans lot'};
+      var cs=byLot[lid];
+      var total=cs.reduce(function(s,c){return s+parseFloat(c.montant||0);},0);
+      h+='<div class="lhd"><span>'+esc(lot.nom)+'</span><span class="lline"></span><span style="color:var(--red);font-weight:700">'+Math.round(total)+' €</span></div>';
+      cs.forEach(function(c){
+        var cat=CATS.find(function(x){return x.id===c.categorie;})||{label:c.categorie};
+        h+='<div class="card"><div class="chd">'+
+          '<div><div class="ctitle">'+esc(cat.label)+'</div>'+
+          (c.description?'<div style="font-size:12px;color:var(--text2)">'+esc(c.description)+'</div>':'')+
+          '</div><div class="cact">'+
+          '<div style="font-size:15px;font-weight:700;color:var(--red)">'+parseFloat(c.montant).toLocaleString('fr-FR')+'€</div>'+
+          '<button class="btn btns" data-echarge="'+c.id+'">✏️</button>'+
+          '<button class="btn btns btnd" data-dcharge="'+c.id+'">🗑</button>'+
+          '</div></div></div>';
+      });
+    });
+  }
+  var el=document.getElementById('list-charges');
+  if(el)el.innerHTML=h;
+}
+
+function mCharge(cid){
+  var c=cid?DB.charges.find(function(x){return x.id===cid;}):null;
+  var lOpts=DB.lots.map(function(l){return'<option value="'+l.id+'"'+(c&&l.id===c.lot_id?' selected':'')+'>'+esc(l.nom)+'</option>';}).join('');
+  var year=String(new Date().getFullYear());
+  var years=[];for(var y=parseInt(year)-3;y<=parseInt(year)+1;y++)years.push(y);
+  var yOpts=years.map(function(y){return'<option value="'+y+'"'+(c?c.annee===String(y)?'  selected':'':(String(y)===year?' selected':''))+'>'+y+'</option>';}).join('');
+  var catOpts=CATS.map(function(x){return'<option value="'+x.id+'"'+(c&&c.categorie===x.id?' selected':'')+'>'+x.label+'</option>';}).join('');
+  showModal('<div class="mhandle"></div><div class="mh3">'+(c?'✏️ Modifier':'💸 Nouvelle charge')+' <button class="mclose" id="mcl">×</button></div>'+
+    '<div class="f2"><div class="field"><label>Lot</label><select id="ch-lot"><option value="">— Choisir —</option>'+lOpts+'</select></div>'+
+    '<div class="field"><label>Année</label><select id="ch-an">'+yOpts+'</select></div></div>'+
+    '<div class="f2"><div class="field"><label>Catégorie</label><select id="ch-cat">'+catOpts+'</select></div>'+
+    '<div class="field"><label>Montant (€)</label><input id="ch-mt" type="number" step="0.01" value="'+(c?c.montant:'')+'" placeholder="0"></div></div>'+
+    '<div class="field"><label>Description (optionnel)</label><input id="ch-desc" value="'+(c?esc(c.description||''):'')+'" placeholder="ex: Réfection toiture garage 3"></div>'+
+    '<button class="btn btnp" style="width:100%;margin-top:6px" id="ch-sv">'+(c?'Enregistrer':'Ajouter')+'</button>');
+  document.getElementById('mcl').onclick=closeModal;
+  document.getElementById('ch-sv').onclick=function(){
+    var lotId=document.getElementById('ch-lot').value;if(!lotId){toast('Lot requis');return;}
+    var mt=parseFloat(document.getElementById('ch-mt').value);if(!mt){toast('Montant requis');return;}
+    var data={lot_id:lotId,annee:document.getElementById('ch-an').value,categorie:document.getElementById('ch-cat').value,montant:mt,description:document.getElementById('ch-desc').value.trim()};
+    if(c){Object.assign(c,data);}else{data.id=uid();DB.charges.push(data);}
+    save();closeModal();rCharges();rBilan();toast('✓ Charge '+(c?'modifiée':'ajoutée'));
+  };
+}
+
+// ═══════════════════════════════════════
+// ── BILAN FISCAL ───────────────────────
+// ═══════════════════════════════════════
+function rBilan(){
+  var el=document.getElementById('bilan-content');if(!el)return;
+  var bilAn=document.getElementById('bil-an');
+  var bilLot=document.getElementById('bil-lot');
+  if(!bilAn||!bilLot)return;
+  var year=bilAn.value||String(new Date().getFullYear());
+  var lotId=bilLot.value;
+
+  // Filter lots
+  var lotsToShow=lotId==='all'?DB.lots:DB.lots.filter(function(l){return l.id===lotId;});
+  if(!lotsToShow.length){el.innerHTML='<div class="empty"><div class="ei">💰</div><p>Aucun lot</p></div>';return;}
+
+  var globalLoyers=0,globalCharges=0;
+  var html='';
+
+  lotsToShow.forEach(function(lot){
+    // Loyers perçus pour ce lot sur l'année
+    var loyers=0;
+    DB.transactions.forEach(function(t){
+      if(t.type_mouvement!=='loyer')return;
+      if(!t.mois_concerne||!t.mois_concerne.startsWith(year))return;
+      var cx=DB.contrats.find(function(x){return x.id===t.contrat_id;});
+      if(!cx)return;
+      if(!getGids(cx).some(function(gid){var g=DB.garages.find(function(x){return x.id===gid;});return g&&g.lot_id===lot.id;}))return;
+      loyers+=parseFloat(t.montant||0);
+    });
+
+    // Charges pour ce lot sur l'année
+    var chargesLot=DB.charges.filter(function(c){return c.lot_id===lot.id&&c.annee===year;});
+    // Add taxe fonciere from lot if set and no charge entry
+    var hasTaxe=chargesLot.find(function(c){return c.categorie==='taxe_fonciere';});
+    if(!hasTaxe&&lot.taxe_fonciere){
+      chargesLot=[{lot_id:lot.id,annee:year,categorie:'taxe_fonciere',montant:lot.taxe_fonciere,description:'(fiche lot)',id:'_auto_'+lot.id}].concat(chargesLot);
+    }
+    var totalCharges=chargesLot.reduce(function(s,c){return s+parseFloat(c.montant||0);},0);
+    globalLoyers+=loyers;globalCharges+=totalCharges;
+
+    // Micro vs Réel
+    var microBase=Math.round(loyers*0.7);
+    var reel=Math.round(loyers-totalCharges);
+    var microBetter=microBase<reel;
+
+    html+='<div class="card" style="margin-bottom:12px">'+
+      '<div style="font-size:15px;font-weight:700;margin-bottom:12px;color:var(--accent)">'+esc(lot.nom)+' — '+year+'</div>'+
+      '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px">'+
+        // MICRO
+        '<div style="background:'+(microBetter?'rgba(30,200,122,0.08)':'var(--bg3)')+';border:2px solid '+(microBetter?'var(--green)':'var(--border)')+';border-radius:var(--rs);padding:10px">'+
+          '<div style="font-size:11px;font-weight:700;color:'+(microBetter?'var(--green)':'var(--text2)')+';margin-bottom:8px">MICRO-FONCIER'+(microBetter?' ✓ AVANTAGEUX':'')+'</div>'+
+          '<div class="row"><span>Loyers bruts</span><b>'+Math.round(loyers)+' €</b></div>'+
+          '<div class="row"><span>Abattement 30%</span><b style="color:var(--red)">-'+Math.round(loyers*0.3)+' €</b></div>'+
+          '<div class="row"><span style="font-weight:600">Imposable</span><b style="font-size:14px;color:'+(microBetter?'var(--green)':'var(--text)')+'">'+microBase+' €</b></div>'+
+        '</div>'+
+        // RÉEL
+        '<div style="background:'+(!microBetter?'rgba(30,200,122,0.08)':'var(--bg3)')+';border:2px solid '+(!microBetter?'var(--green)':'var(--border)')+';border-radius:var(--rs);padding:10px">'+
+          '<div style="font-size:11px;font-weight:700;color:'+(!microBetter?'var(--green)':'var(--text2)')+';margin-bottom:8px">RÉGIME RÉEL'+(!microBetter?' ✓ AVANTAGEUX':'')+'</div>'+
+          '<div class="row"><span>Loyers bruts</span><b>'+Math.round(loyers)+' €</b></div>'+
+          '<div class="row"><span>Total charges</span><b style="color:var(--red)">-'+Math.round(totalCharges)+' €</b></div>'+
+          '<div class="row"><span style="font-weight:600">'+(reel>=0?'Bénéfice net':'Déficit foncier')+'</span><b style="font-size:14px;color:'+(reel>=0&&!microBetter?'var(--green)':reel<0?'var(--amber)':'var(--text)')+'">'+reel+' €</b></div>'+
+        '</div>'+
+      '</div>'+
+      // Détail charges
+      (chargesLot.length?
+        '<div style="font-size:12px;font-weight:600;color:var(--text2);margin-bottom:6px">Détail charges</div>'+
+        chargesLot.map(function(c){
+          var cat=CATS.find(function(x){return x.id===c.categorie;})||{label:c.categorie};
+          return'<div class="row"><span>'+esc(cat.label)+(c.description?' <span style="color:var(--text3);font-size:11px">'+esc(c.description)+'</span>':'')+'</span><b style="color:var(--red)">'+parseFloat(c.montant).toLocaleString('fr-FR')+' €</b></div>';
+        }).join(''):'<div style="font-size:12px;color:var(--text3);padding:6px 0">Aucune charge saisie pour ce lot</div>')+
+    '</div>';
+  });
+
+  // Global total if multiple lots
+  if(lotsToShow.length>1){
+    var globalReel=Math.round(globalLoyers-globalCharges);
+    var globalMicro=Math.round(globalLoyers*0.7);
+    html+='<div class="card" style="border:2px solid var(--accent)">'+
+      '<div style="font-size:14px;font-weight:700;margin-bottom:10px">TOTAL — Tous lots ('+year+')</div>'+
+      '<div class="row"><span>Loyers bruts</span><b>'+Math.round(globalLoyers)+' €</b></div>'+
+      '<div class="row"><span>Total charges</span><b style="color:var(--red)">-'+Math.round(globalCharges)+' €</b></div>'+
+      '<div class="row"><span>Micro (imposable)</span><b>'+globalMicro+' €</b></div>'+
+      '<div class="row"><span style="font-weight:600">'+(globalReel>=0?'Bénéfice réel':'Déficit foncier')+'</span><b style="font-size:15px;color:'+(globalReel<0?'var(--amber)':'var(--green)')+'">'+globalReel+' €</b></div>'+
+    '</div>';
+  }
+
+  // Copy button for accountant
+  html+='<button class="btn" style="width:100%;margin-top:10px" id="btn-copy-bilan">📋 Copier pour comptable</button>';
+  el.innerHTML=html;
+
+  document.getElementById('btn-copy-bilan').onclick=function(){
+    var NL='\n';
+    var sep='============================';
+    var sep2='--------------------';
+    var txt='BILAN FONCIER '+year+NL+sep+NL+NL;
+    lotsToShow.forEach(function(lot){
+      var loyers=0;
+      DB.transactions.forEach(function(t){
+        if(t.type_mouvement!=='loyer'||!t.mois_concerne||!t.mois_concerne.startsWith(year))return;
+        var cx=DB.contrats.find(function(x){return x.id===t.contrat_id;});
+        if(!cx)return;
+        if(getGids(cx).some(function(gid){var g=DB.garages.find(function(x){return x.id===gid;});return g&&g.lot_id===lot.id;}))loyers+=parseFloat(t.montant||0);
+      });
+      var chargesLot=DB.charges.filter(function(c){return c.lot_id===lot.id&&c.annee===year;});
+      if(!chargesLot.find(function(c){return c.categorie==='taxe_fonciere';})&&lot.taxe_fonciere)
+        chargesLot=[{categorie:'taxe_fonciere',montant:lot.taxe_fonciere,description:'fiche lot'}].concat(chargesLot);
+      var totalC=chargesLot.reduce(function(s,c){return s+parseFloat(c.montant||0);},0);
+      txt+=lot.nom+NL+sep2+NL;
+      txt+='Loyers percus : '+Math.round(loyers)+' EUR'+NL;
+      chargesLot.forEach(function(c){
+        var cat=CATS.find(function(x){return x.id===c.categorie;})||{label:c.categorie};
+        txt+='  '+cat.label+(c.description?' ('+c.description+')':'')+' : -'+c.montant+' EUR'+NL;
+      });
+      txt+='Total charges : -'+Math.round(totalC)+' EUR'+NL;
+      txt+='Micro-foncier imposable : '+Math.round(loyers*0.7)+' EUR'+NL;
+      txt+='Regime reel : '+(Math.round(loyers-totalC)>=0?'+':'')+Math.round(loyers-totalC)+' EUR'+NL+NL;
+    });
+    navigator.clipboard.writeText(txt).then(function(){toast('Copie !');}).catch(function(){toast('Erreur copie');});
+  };
+}
+
 function renderAll(){
   rDashboard();rLotFilter();rLots();rGarages();rLocataires();
   rContratFilter();rContrats();rMoisTabs();rPaiements();rTemplates();
+  rChargeFilters();rBilan();
 }
 
 // ── HELPERS ───────────────────────────────────────────
@@ -1126,6 +1367,13 @@ document.addEventListener('click',function(e){
       save();closeModal();rContrats();rGarages();rHeat();toast('Contrat supprimé');
     });return;}
   var etpl=e.target.closest('[data-etpl]');if(etpl){mTemplate(etpl.dataset.etpl);return;}
+  if(e.target.id==='btn-add-charge'){mCharge(null);return;}
+  var ech=e.target.closest('[data-echarge]');if(ech){mCharge(ech.dataset.echarge);return;}
+  var dch=e.target.closest('[data-dcharge]');if(dch){
+    mConfirm('Supprimer cette charge ?',function(){
+      DB.charges=DB.charges.filter(function(x){return x.id!==dch.dataset.dcharge;});
+      save();rCharges();rBilan();toast('Charge supprimée');
+    });return;}
   var dtpl=e.target.closest('[data-dtpl]');if(dtpl){
     DB.templates=DB.templates.filter(function(x){return x.id!==dtpl.dataset.dtpl;});
     save();rTemplates();rLocataires();toast('Template supprimé');return;}
@@ -1135,8 +1383,11 @@ document.addEventListener('click',function(e){
 document.getElementById('fl').addEventListener('change',rGarages);
 document.getElementById('sloc').addEventListener('input',rLocataires);
 document.getElementById('fp').addEventListener('change',rPaiements);
-document.getElementById('fc-st').addEventListener('change',rContrats);
-document.getElementById('fc-loc').addEventListener('change',rContrats);
+// fc-st and fc-loc listeners added dynamically in showRef('contrats')
+document.getElementById('fc-lot-charge').addEventListener('change',rCharges);
+document.getElementById('fc-an-charge').addEventListener('change',rCharges);
+document.getElementById('bil-an').addEventListener('change',rBilan);
+document.getElementById('bil-lot').addEventListener('change',rBilan);
 
 function toast(msg){var t=document.getElementById('toast');t.textContent=msg;t.className='toast show';setTimeout(function(){t.className='toast';},3000);}
 
@@ -1145,6 +1396,7 @@ load();
 renderAll();
 
 })();
+
 </script>
 </body>
 </html>
