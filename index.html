@@ -65,7 +65,7 @@ button,input,select,textarea{font-family:inherit;}
 .kpi{background:var(--bg3);border-radius:var(--rs);padding:7px 10px;}
 .kval{font-size:17px;font-weight:700;letter-spacing:-.3px;}
 .klbl{font-size:10px;color:var(--text2);margin-top:1px;}
-.kpi-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:5px;margin-bottom:10px;}
+.kpi-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:5px;margin-bottom:10px;}
 .kpi{background:var(--bg3);border-radius:var(--rs);padding:7px 10px;}
 .kval{font-size:17px;font-weight:700;letter-spacing:-.3px;}
 .klbl{font-size:11px;color:var(--text2);margin-top:1px;}
@@ -238,7 +238,10 @@ button,input,select,textarea{font-family:inherit;}
 
   <!-- CONTRATS -->
   <div id="s2" class="sec">
-    <div class="mtabs" id="mtabs"></div>
+    <div style="display:flex;gap:7px;margin-bottom:12px;flex-wrap:wrap;align-items:center">
+      <select id="pay-year" style="font-size:13px;padding:7px 10px;border-radius:var(--rs);border:1px solid var(--border2);background:var(--bg2);color:var(--text)"></select>
+      <select id="pay-month" style="font-size:13px;padding:7px 10px;border-radius:var(--rs);border:1px solid var(--border2);background:var(--bg2);color:var(--text)"></select>
+    </div>
     <div class="tb">
       <select id="fp"><option value="all">Tous statuts</option><option value="ok">Payé</option><option value="partiel">Partiel</option><option value="impaye">Impayé</option></select>
       <button class="btn btnp" id="btn-add-pay">+ Paiement</button>
@@ -812,6 +815,15 @@ function rHeat(){
     var gids=DB.garages.filter(function(g){return g.lot_id===dfLot;}).map(function(g){return g.id;});
     allC=allC.filter(function(c){return getGids(c).some(function(gid){return gids.includes(gid);});});
   }
+  // Sort by lot name then garage name
+  allC.sort(function(a,b){
+    var ga=DB.garages.find(function(g){return getGids(a).includes(g.id);})||{nom_numero:'',lot_id:''};
+    var gb=DB.garages.find(function(g){return getGids(b).includes(g.id);})||{nom_numero:'',lot_id:''};
+    var la=DB.lots.find(function(l){return l.id===ga.lot_id;})||{nom:''};
+    var lb=DB.lots.find(function(l){return l.id===gb.lot_id;})||{nom:''};
+    if(la.nom!==lb.nom) return la.nom.localeCompare(lb.nom);
+    return ga.nom_numero.localeCompare(gb.nom_numero,undefined,{numeric:true});
+  });
 
   // KPIs
   // ── KPIs ──────────────────────────────────────────────────
@@ -853,7 +865,7 @@ function rHeat(){
   if(kpisEl){
     var khtml=
       '<div class="kpi"><div class="kval cb">'+nbActifs+'</div><div class="klbl">Contrats actifs</div></div>'+
-      '<div class="kpi"><div class="kval cg">'+Math.round(loyerMensuel)+' €</div><div class="klbl">Loyers / mois</div></div>'+
+
       '<div class="kpi"><div class="kval '+(nbImpayes>0?'cr':'cg')+'">'+nbImpayes+'</div><div class="klbl">Impayés ce mois</div></div>'+
       '<div class="kpi"><div class="kval cg">'+Math.round(totalPercuLot)+' €</div><div class="klbl">Perçu '+esc(lotLabel)+' ('+yearLabel+')</div></div>';
     if(dfLot2!=='all'){
@@ -886,7 +898,25 @@ function rHeat(){
     });
     tb+='</tr>';
   });
-  document.getElementById('ht-body').innerHTML=tb;
+  // Add totals row at bottom
+  var totalsRow='<tr style="border-top:2px solid var(--border2)">'+
+    '<td style="position:sticky;left:0;z-index:1;background:var(--bg3);padding:4px 6px;font-size:11px;font-weight:700;color:var(--text2)">TOTAL</td>'+
+    '<td style="padding:4px;text-align:right;font-size:11px;font-weight:700;color:var(--text2)"></td>';
+  cols.forEach(function(col){
+    var ic=col.y===CUR_Y&&col.m===CUR_M;
+    var ym=col.y+'-'+(col.m<9?'0'+(col.m+1):(col.m+1));
+    var total=0;
+    allC.forEach(function(c){
+      var txs=txIdx[c.id+'_'+ym]||[];
+      total+=txs.reduce(function(s,t){return s+parseFloat(t.montant||0);},0);
+    });
+    totalsRow+='<td class="cel'+(ic?' cur':'')+'" style="background:var(--bg3)">'+
+      '<div class="ci" style="font-size:11px;font-weight:700;color:var(--text);height:28px">'+
+      (total>0?Math.round(total):'')+
+      '</div></td>';
+  });
+  totalsRow+='</tr>';
+  document.getElementById('ht-body').innerHTML=tb+totalsRow;
 
 }
 ['df-an','df-lot'].forEach(function(id){document.getElementById(id).addEventListener('change',rHeat);});
@@ -1157,18 +1187,24 @@ window.quickPay=quickPay;
 // ── PAIEMENTS ──────────────────────────
 // ═══════════════════════════════════════
 function rMoisTabs(){
-  var el=document.getElementById('mtabs');el.innerHTML='';
+  var pyEl=document.getElementById('pay-year');
+  var pmEl=document.getElementById('pay-month');
+  if(!pyEl||!pmEl) return;
   var now=new Date();
-  for(var i=-4;i<=2;i++){
-    (function(m){
-      var d=new Date(now.getFullYear(),now.getMonth()+m,1);
-      var ym=d.toISOString().slice(0,7);
-      var b=document.createElement('button');
-      b.className='mt'+(ym===curMois?' on':'');
-      b.textContent=fmtMs(ym)+' '+ym.slice(0,4);
-      b.onclick=function(){curMois=ym;el.querySelectorAll('.mt').forEach(function(x){x.className='mt';});b.className='mt on';rPaiements();rContrats();};
-      el.appendChild(b);
-    })(i);
+  var curY=parseInt(curMois.slice(0,4));
+  var curM=parseInt(curMois.slice(5,7));
+  // Build years from all transactions + current year
+  var years=new Set([String(now.getFullYear()),String(now.getFullYear()-1)]);
+  DB.transactions.forEach(function(t){if(t.mois_concerne)years.add(t.mois_concerne.slice(0,4));});
+  DB.contrats.forEach(function(c){if(c.date_debut)years.add(c.date_debut.slice(0,4));});
+  var sortedYears=[...years].sort().reverse();
+  pyEl.innerHTML=sortedYears.map(function(y){return'<option value="'+y+'"'+(String(curY)===y?' selected':'')+'>'+y+'</option>';}).join('');
+  var MOIS_FR=['Janvier','Février','Mars','Avril','Mai','Juin','Juillet','Août','Septembre','Octobre','Novembre','Décembre'];
+  pmEl.innerHTML=MOIS_FR.map(function(m,i){var v=i+1<10?'0'+(i+1):String(i+1);return'<option value="'+v+'"'+(curM===i+1?' selected':'')+'>'+m+'</option>';}).join('');
+  if(!pyEl.dataset.bound){
+    pyEl.addEventListener('change',function(){curMois=pyEl.value+'-'+pmEl.value;rPaiements();rContrats();});
+    pmEl.addEventListener('change',function(){curMois=pyEl.value+'-'+pmEl.value;rPaiements();rContrats();});
+    pyEl.dataset.bound='1';
   }
 }
 
