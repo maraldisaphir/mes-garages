@@ -834,15 +834,19 @@ function rHeat(){
   var dfLot2=document.getElementById('df-lot').value;
   var dfAn2=document.getElementById('df-an').value;
   var filtYears2=dfAn2==='all'?getYears():[dfAn2];
-  // Loyers mensuels actifs
-  var activeC=DB.contrats.filter(function(c){return c.est_actif;});
+  // Loyers mensuels actifs — contrat actif ET date_fin pas dépassée
+  var todayKpi=new Date().toISOString().slice(0,10);
+  var activeC=DB.contrats.filter(function(c){
+    var termine=!c.est_actif||(c.date_fin&&c.date_fin<todayKpi);
+    return !termine;
+  });
   var filtC=dfLot2==='all'?activeC:activeC.filter(function(c){
     var gids=DB.garages.filter(function(g){return g.lot_id===dfLot2;}).map(function(g){return g.id;});
     return getGids(c).some(function(gid){return gids.includes(gid);});
   });
   var nbActifs=filtC.length;
   var loyerMensuel=filtC.reduce(function(s,c){return s+parseFloat(c.loyer_mensuel||0);},0);
-  // Impayés mois en cours
+  // Impayés mois en cours — seulement contrats vraiment actifs
   var nbImpayes=filtC.filter(function(c){
     var txM=DB.transactions.filter(function(t){return t.contrat_id===c.id&&t.mois_concerne===curMois&&t.type_mouvement==='loyer';});
     var recu=txM.reduce(function(s,t){return s+parseFloat(t.montant||0);},0);
