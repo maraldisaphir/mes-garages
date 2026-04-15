@@ -1020,7 +1020,8 @@ function rLocataires(){
   var h='';
   if(!list.length)h='<div class="empty"><div class="ei">👤</div><p>Aucun locataire</p></div>';
   list.forEach(function(l,i){
-    var cs=DB.contrats.filter(function(c){return c.locataire_id===l.id&&c.est_actif;});
+    var today=new Date().toISOString().slice(0,10);
+    var cs=DB.contrats.filter(function(c){return c.locataire_id===l.id&&c.est_actif&&(!c.date_fin||c.date_fin>=today);});
     var msgBtns=DB.templates.map(function(tpl){return'<button class="btn btns" onclick="previewMsg(\''+l.id+'\',\''+tpl.id+'\')">'+esc(tpl.nom)+'</button>';}).join('');
     h+='<div class="card">'+
       '<div style="display:flex;align-items:center;gap:10px;margin-bottom:10px">'+
@@ -1098,14 +1099,16 @@ function rContrats(){
     var txCur=DB.transactions.filter(function(t){return t.contrat_id===c.id&&t.mois_concerne===curMois&&t.type_mouvement==='loyer';});
     var recu=txCur.reduce(function(s,t){return s+parseFloat(t.montant||0);},0);
     var du=parseFloat(c.loyer_mensuel||0);
-    var lSt=!c.est_actif?'cloture':recu===0?'impaye':recu>=du?'ok':'partiel';
+    var today2=new Date().toISOString().slice(0,10);
+    var contratTermine=!c.est_actif||(c.date_fin&&c.date_fin<today2);
+    var lSt=contratTermine?'cloture':recu===0?'impaye':recu>=du?'ok':'partiel';
     var reste=Math.max(0,du-recu);
     h+='<div class="card"><div class="chd">'+
       '<div><div class="ctitle">'+esc(l.prenom||'')+' '+esc(l.nom)+'</div>'+
       '<div style="font-size:12px;color:var(--text2)">'+esc(gNamesForContrat(c))+'</div></div>'+
       '<div class="cact">'+
         '<span class="badge '+(c.est_actif?'actif':'cloture')+'">'+(c.est_actif?'Actif':'Clôturé')+'</span>'+
-        (c.est_actif?'<span class="badge '+lSt+'">'+(lSt==='ok'?'Payé':lSt==='partiel'?'Partiel':lSt==='impaye'?'Impayé':'—')+'</span>':'')+
+        (!contratTermine?'<span class="badge '+lSt+'">'+(lSt==='ok'?'Payé':lSt==='partiel'?'Partiel':lSt==='impaye'?'Impayé':'—')+'</span>':'')+
         '<button class="btn btns" data-econ="'+c.id+'">✏️</button>'+
         '<button class="btn btns btnd" data-dcon="'+c.id+'">🗑</button>'+
       '</div></div>'+
