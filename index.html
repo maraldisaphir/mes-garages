@@ -201,13 +201,16 @@ button,input,select,textarea{font-family:inherit;}
     <div id="ref-locataires" style="display:none">
       <div class="tb">
         <input type="search" id="sloc" placeholder="Rechercher...">
+        <label style="display:flex;align-items:center;gap:5px;font-size:13px;color:var(--text2);cursor:pointer;white-space:nowrap">
+          <input type="checkbox" id="show-inactifs-loc" style="width:15px;height:15px"> Inactifs
+        </label>
         <button class="btn btnp" id="btn-add-loc">+ Nouveau locataire</button>
       </div>
       <div id="list-locataires"></div>
     </div>
     <div id="ref-contrats" style="display:none">
     <div class="tb">
-      <select id="fc-st"><option value="all">Tous</option><option value="actif">Actifs</option><option value="cloture">Clôturés</option></select>
+      <select id="fc-st"><option value="actif">Actifs</option><option value="all">Tous</option><option value="cloture">Clôturés</option></select>
       <select id="fc-loc"><option value="all">Tous locataires</option></select>
       <button class="btn btnp" id="btn-add-contrat">+ Nouveau contrat</button>
     </div>
@@ -1016,7 +1019,22 @@ function mGarage(gid){
 // ═══════════════════════════════════════
 function rLocataires(){
   var q=(document.getElementById('sloc').value||'').toLowerCase();
-  var list=DB.locataires.filter(function(l){return(l.nom+' '+(l.prenom||'')).toLowerCase().includes(q);});
+  var showInactifsLoc=document.getElementById('show-inactifs-loc');
+  var afficherInactifsLoc=showInactifsLoc&&showInactifsLoc.checked;
+  var today4=new Date().toISOString().slice(0,10);
+  var list=DB.locataires.filter(function(l){
+    if(!(l.nom+' '+(l.prenom||'')).toLowerCase().includes(q)) return false;
+    if(!afficherInactifsLoc){
+      // Hide if no active contrat
+      var hasActive=DB.contrats.some(function(c){
+        if(c.locataire_id!==l.id) return false;
+        var termine=!c.est_actif||(c.date_fin&&c.date_fin<today4);
+        return !termine;
+      });
+      if(!hasActive) return false;
+    }
+    return true;
+  });
   var h='';
   if(!list.length)h='<div class="empty"><div class="ei">👤</div><p>Aucun locataire</p></div>';
   list.forEach(function(l,i){
@@ -1085,9 +1103,11 @@ function rContratFilter(){
 function rContrats(){
   var fcst=document.getElementById('fc-st').value;
   var fcloc=document.getElementById('fc-loc').value;
+  var today0=new Date().toISOString().slice(0,10);
   var list=DB.contrats.filter(function(c){
-    if(fcst==='actif'&&!c.est_actif)return false;
-    if(fcst==='cloture'&&c.est_actif)return false;
+    var termine=!c.est_actif||(c.date_fin&&c.date_fin<today0);
+    if(fcst==='actif'&&termine)return false;
+    if(fcst==='cloture'&&!termine)return false;
     if(fcloc!=='all'&&c.locataire_id!==fcloc)return false;
     return true;
   });
@@ -1107,7 +1127,7 @@ function rContrats(){
       '<div><div class="ctitle">'+esc(l.prenom||'')+' '+esc(l.nom)+'</div>'+
       '<div style="font-size:12px;color:var(--text2)">'+esc(gNamesForContrat(c))+'</div></div>'+
       '<div class="cact">'+
-        '<span class="badge '+(c.est_actif?'actif':'cloture')+'">'+(c.est_actif?'Actif':'Clôturé')+'</span>'+
+        '<span class="badge '+(contratTermine?'cloture':'actif')+'">'+(contratTermine?'Clôturé':'Actif')+'</span>'+
         (!contratTermine?'<span class="badge '+lSt+'">'+(lSt==='ok'?'Payé':lSt==='partiel'?'Partiel':lSt==='impaye'?'Impayé':'—')+'</span>':'')+
         '<button class="btn btns" data-econ="'+c.id+'">✏️</button>'+
         '<button class="btn btns btnd" data-dcon="'+c.id+'">🗑</button>'+
@@ -1151,9 +1171,11 @@ function mContrat(cid){
     '<div class="field"><label>Caution déjà versée (€)</label><input id="cn-cv" type="number" step="0.01" value="'+(c?c.caution_versee||0:0)+'"></div>'+
     '<div class="field"><label>Notes</label><textarea id="cn-no">'+(c?esc(c.notes||''):'')+'</textarea></div>'+
     '<button class="btn btnp" style="width:100%;margin-top:6px" id="cn-sv">'+(c?'Enregistrer':'Créer le contrat')+'</button>'+
-    (c&&c.est_actif?'<button class="btn btnd" style="width:100%;margin-top:8px" id="cn-cl">Clôturer ce contrat</button>':''));
+    (c&&!contratTermine2?'<button class="btn btnd" style="width:100%;margin-top:8px" id="cn-cl">Clôturer ce contrat</button>':''));
   document.getElementById('mcl').onclick=closeModal;
-  if(c&&c.est_actif){
+  var today3=new Date().toISOString().slice(0,10);
+  var contratTermine2=!c||(c&&(!c.est_actif||(c.date_fin&&c.date_fin<today3)));
+  if(c&&!contratTermine2){
     document.getElementById('cn-cl').onclick=function(){
       c.est_actif=false;c.date_fin=new Date().toISOString().slice(0,10);
       save();closeModal();rContrats();rGarages();rHeat();toast('✓ Contrat clôturé');
@@ -1537,6 +1559,7 @@ document.addEventListener('click',function(e){
 
 document.getElementById('fl').addEventListener('change',rGarages);
 document.getElementById('sloc').addEventListener('input',rLocataires);
+document.getElementById('show-inactifs-loc').addEventListener('change',rLocataires);
 document.getElementById('fp').addEventListener('change',rPaiements);
 // fc-st and fc-loc listeners added dynamically in showRef('contrats')
 document.getElementById('fc-lot-charge').addEventListener('change',rCharges);
