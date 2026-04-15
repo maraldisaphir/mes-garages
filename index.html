@@ -523,6 +523,7 @@ window.refreshPayInfo=refreshPayInfo;
 var CATS=[
   {id:'taxe_fonciere',label:'Taxe foncière'},
   {id:'assurance',label:'Assurance PNO'},
+  {id:'charges_copro',label:'Charges copropriété'},
   {id:'interets',label:'Intérêts emprunt'},
   {id:'travaux',label:'Travaux / Réparations'},
   {id:'frais_gestion',label:'Frais de gestion'},
@@ -1339,7 +1340,8 @@ function mEditPaiement(contratId, mois){
 function buildMoisOpts(selected){
   var opts='<option value="">— Aucun —</option>';
   var now=new Date();
-  for(var i=-6;i<=3;i++){
+  // Go back 48 months (4 years) and forward 3 months
+  for(var i=-48;i<=3;i++){
     var d=new Date(now.getFullYear(),now.getMonth()+i,1);
     var ym=d.toISOString().slice(0,7);
     var sel=(selected&&ym===selected)?' selected':'';
